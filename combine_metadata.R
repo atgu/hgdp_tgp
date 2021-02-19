@@ -1,4 +1,10 @@
 library(tidyverse)
+library(gtable)
+library(maptools)
+library(mapdata)
+library(raster)
+library(ggmap)
+library(cowplot)
 
 setwd('/Users/alicia/martin_lab/projects/hgdp_tgp')
 
@@ -102,3 +108,52 @@ gnomad_meta_coords <- gnomad_meta %>%
   inner_join(simple_meta_coords, by=c('project_meta.project_subpop' = 'hgdp_tgp_meta.project_meta.project_subpop'))
 
 write.table(gnomad_meta_coords, 'gnomad_meta_v1.txt', row.names=F, quote=F, sep='\t')
+
+
+# Plot map of samples -----------------------------------------------------
+
+data(wrld_simpl)
+world <- fortify(wrld_simpl)
+
+lims = SpatialPoints(coords = data_frame(x = xlim, y = ylim), proj4string = CRS("+proj=longlat +datum=WGS84"))%>%
+  spTransform(CRS("+init=epsg:3857"))
+
+# Read the latitude/longitdue data for populations in AGVP/TGP
+pop_pos <- read.csv('african_pop_summary3.csv', header=T)#, stringsAsFactors = F)
+pop_pos_plot <- subset(pop_pos, Population != 'Ethiopia')
+pop_pos_plot$Population <- factor(pop_pos_plot$Population, levels=as.character(pop_pos_plot$Population))
+pop_pos_plot <- pop_pos_plot %>% 
+  filter(Population %in% pca_tgp_agvp$FID) %>%
+  droplevels()
+#pop_pos_plot <- subset(pop_pos_plot, Population %in% pca$FID)
+color_vec <- as.character(pop_pos$Color)
+names(color_vec) <- pop_pos$Population
+shape_vec <- pop_pos$Shape
+names(shape_vec) <- pop_pos$Population
+
+gnomad_meta_coords_pop <- gnomad_meta_coords %>% 
+  dplyr::select(starts_with('hgdp_tgp_meta')) %>% 
+  group_by(hgdp_tgp_meta.Population) %>%
+  mutate(hgdp_tgp_meta.n=n()) %>%
+  unique() %>%
+  ungroup()
+# plot the map of Africa with data points labeled
+p_world <- ggplot() +
+  geom_polygon(data = world, aes(long, lat, group=group), fill='lightyellow', color='lightgrey') +
+  geom_point(data = gnomad_meta_coords_pop, aes(hgdp_tgp_meta.Longitude, hgdp_tgp_meta.Latitude, 
+                                                color=hgdp_tgp_meta.Genetic.region, fill=hgdp_tgp_meta.Genetic.region, 
+                                                shape=hgdp_tgp_meta.Project, size=hgdp_tgp_meta.n)) +
+  coord_fixed(xlim = c(-165,165), ylim = c(-55,85)) +
+  labs(x='Longitude', y='Latitude') +
+  theme_classic() +
+  scale_fill_manual(name = "Region", values = region_vec) +
+  scale_color_manual(name = "Region", values = region_vec) +
+  scale_size(name = 'N') +
+  scale_shape(name='Project') +
+  theme(panel.background = element_rect(fill = "lightblue"),
+        plot.background = element_rect(fill = "transparent", color = NA),
+        #legend.justification = c(0,1),
+        text = element_text(size=14),
+        axis.text = element_text(color='black'))
+
+ggsave('hgdp_tgp_world_map.pdf', p_world, width=10, height=5)
