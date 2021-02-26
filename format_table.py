@@ -57,116 +57,51 @@ sample_meta = sample_meta.key_by('s')
 
 
 # Correcting the field types from the flattened hail table
-sample_meta = sample_meta.annotate(project_meta = sample_meta.project_meta.annotate(
-    v2_age=hl.float64(sample_meta.project_meta.v2_age)))
-
-sample_meta = sample_meta.annotate(project_meta = sample_meta.project_meta.annotate(
-    v2_related=hl.bool(sample_meta.project_meta.v2_related)))
-
-sample_meta = sample_meta.annotate(project_meta = sample_meta.project_meta.annotate(
-    v2_internal=hl.bool(sample_meta.project_meta.v2_internal)))
-
-sample_meta = sample_meta.annotate(project_meta = sample_meta.project_meta.annotate(
-    v2_neuro=hl.bool(sample_meta.project_meta.v2_neuro)))
-
-sample_meta = sample_meta.annotate(project_meta = sample_meta.project_meta.annotate(
-    v2_control=hl.bool(sample_meta.project_meta.v2_control)))
-
-sample_meta = sample_meta.annotate(project_meta = sample_meta.project_meta.annotate(
-    v2_topmed=hl.bool(sample_meta.project_meta.v2_topmed)))
-
-sample_meta = sample_meta.annotate(project_meta = sample_meta.project_meta.annotate(
-    v2_high_quality=hl.bool(sample_meta.project_meta.v2_high_quality)))
-
-sample_meta = sample_meta.annotate(project_meta = sample_meta.project_meta.annotate(
-    v2_pcr_free=hl.bool(sample_meta.project_meta.v2_pcr_free)))
-
-sample_meta = sample_meta.annotate(project_meta = sample_meta.project_meta.annotate(
-    v2_release_2_0_2=hl.bool(sample_meta.project_meta.v2_release_2_0_2)))
-
-sample_meta = sample_meta.annotate(project_meta = sample_meta.project_meta.annotate(
-    age=hl.int32(sample_meta.project_meta.age)))
-
-sample_meta = sample_meta.annotate(project_meta = sample_meta.project_meta.annotate(
-    age_alt=hl.int32(sample_meta.project_meta.age_alt)))
-
-sample_meta = sample_meta.annotate(bam_metrics = sample_meta.bam_metrics.annotate(
-    median_coverage=hl.float64(sample_meta.bam_metrics.median_coverage)))
-
-sample_meta = sample_meta.annotate(bam_metrics = sample_meta.bam_metrics.annotate(
-    median_insert_size=hl.float64(sample_meta.bam_metrics.median_insert_size)))
-
-sample_meta = sample_meta.annotate(sex_imputation = sample_meta.sex_imputation.annotate(
-    chr20_mean_dp=hl.float32(sample_meta.sex_imputation.chr20_mean_dp)))
-
-sample_meta = sample_meta.annotate(sex_imputation = sample_meta.sex_imputation.annotate(
-    chrX_mean_dp=hl.float32(sample_meta.sex_imputation.chrX_mean_dp)))
-
-sample_meta = sample_meta.annotate(sex_imputation = sample_meta.sex_imputation.annotate(
-    chrY_mean_dp=hl.float32(sample_meta.sex_imputation.chrY_mean_dp)))
-
-sample_meta = sample_meta.annotate(sex_imputation = sample_meta.sex_imputation.annotate(
-    chrX_ploidy=hl.float32(sample_meta.sex_imputation.chrX_ploidy)))
-
-sample_meta = sample_meta.annotate(sex_imputation = sample_meta.sex_imputation.annotate(
-    chrY_ploidy=hl.float32(sample_meta.sex_imputation.chrY_ploidy)))
-
-sample_meta = sample_meta.annotate(sex_imputation = sample_meta.sex_imputation.annotate(
+sample_meta = sample_meta.annotate(project_meta=sample_meta.project_meta.annotate(
+    v2_age=hl.float64(sample_meta.project_meta.v2_age),
+    v2_related=hl.bool(sample_meta.project_meta.v2_related),
+    v2_internal=hl.bool(sample_meta.project_meta.v2_internal),
+    v2_neuro=hl.bool(sample_meta.project_meta.v2_neuro),
+    v2_control=hl.bool(sample_meta.project_meta.v2_control),
+    v2_topmed=hl.bool(sample_meta.project_meta.v2_topmed),
+    v2_high_quality=hl.bool(sample_meta.project_meta.v2_high_quality),
+    v2_pcr_free=hl.bool(sample_meta.project_meta.v2_pcr_free),
+    v2_release_2_0_2=hl.bool(sample_meta.project_meta.v2_release_2_0_2),
+    age=hl.int32(sample_meta.project_meta.age),
+    age_alt=hl.int32(sample_meta.project_meta.age_alt)),
+    bam_metrics=sample_meta.bam_metrics.annotate(
+    median_coverage=hl.float64(sample_meta.bam_metrics.median_coverage),
+    median_insert_size=hl.float64(sample_meta.bam_metrics.median_insert_size)),
+    sex_imputation=sample_meta.sex_imputation.annotate(
+    chr20_mean_dp=hl.float32(sample_meta.sex_imputation.chr20_mean_dp),
+    chrX_mean_dp=hl.float32(sample_meta.sex_imputation.chrX_mean_dp),
+    chrY_mean_dp=hl.float32(sample_meta.sex_imputation.chrY_mean_dp),
+    chrX_ploidy=hl.float32(sample_meta.sex_imputation.chrX_ploidy),
+    chrY_ploidy=hl.float32(sample_meta.sex_imputation.chrY_ploidy),
     impute_sex_stats = sample_meta.sex_imputation.impute_sex_stats.annotate(
-        n_called=hl.int64(sample_meta.sex_imputation.impute_sex_stats.n_called))))
-
-sample_meta = sample_meta.annotate(sex_imputation = sample_meta.sex_imputation.annotate(
-    impute_sex_stats = sample_meta.sex_imputation.impute_sex_stats.annotate(
-        expected_homs=hl.float64(sample_meta.sex_imputation.impute_sex_stats.expected_homs))))
-
-sample_meta = sample_meta.annotate(sex_imputation = sample_meta.sex_imputation.annotate(
-    impute_sex_stats = sample_meta.sex_imputation.impute_sex_stats.annotate(
-        observed_homs=hl.int64(sample_meta.sex_imputation.impute_sex_stats.observed_homs))))
-
-sample_meta = sample_meta.annotate(sample_qc = sample_meta.sample_qc.annotate(
-    n_hom_ref=hl.int64(sample_meta.sample_qc.n_hom_ref)))
-
-sample_meta = sample_meta.annotate(sample_qc = sample_meta.sample_qc.annotate
-n_het=hl.int64(sample_meta.sample_qc.n_het)))
-
-sample_meta = sample_meta.annotate(sample_qc = sample_meta.sample_qc.annotate(
-    n_hom_var=hl.int64(sample_meta.sample_qc.n_hom_var)))
-
-sample_meta = sample_meta.annotate(sample_qc = sample_meta.sample_qc.annotate(
-    n_non_ref=hl.int64(sample_meta.sample_qc.n_non_ref)))
-
-sample_meta = sample_meta.annotate(sample_qc = sample_meta.sample_qc.annotate(
-    n_singleton=hl.int64(sample_meta.sample_qc.n_singleton)))
-
-sample_meta = sample_meta.annotate(sample_qc = sample_meta.sample_qc.annotate(
-    n_snp=hl.int64(sample_meta.sample_qc.n_snp)))
-
-sample_meta = sample_meta.annotate(sample_qc = sample_meta.sample_qc.annotate(
-    n_insertion=hl.int64(sample_meta.sample_qc.n_insertion)))
-
-sample_meta = sample_meta.annotate(sample_qc = sample_meta.sample_qc.annotate(
-    n_deletion=hl.int64(sample_meta.sample_qc.n_deletion)))
-
-sample_meta = sample_meta.annotate(sample_qc = sample_meta.sample_qc.annotate(
-    n_transition=hl.int64(sample_meta.sample_qc.n_transition)))
-
-sample_meta = sample_meta.annotate(sample_qc = sample_meta.sample_qc.annotate(
-    n_transversion=hl.int64(sample_meta.sample_qc.n_transversion)))
-
-sample_meta = sample_meta.annotate(sample_qc = sample_meta.sample_qc.annotate(
-    n_star=hl.int64(sample_meta.sample_qc.n_star)))
-
-sample_meta = sample_meta.annotate(population_inference = sample_meta.population_inference.annotate(
-    pca_scores=hl.array(hl.parse_json(sample_meta.population_inference.pca_scores, hl.tarray(hl.tfloat64)))))
-
-sample_meta = sample_meta.annotate(sample_filters = sample_meta.sample_filters.annotate(
-    hard_filters=hl.set(hl.parse_json(sample_meta.sample_filters.hard_filters, hl.tset(hl.tstr)))))
-
-sample_meta = sample_meta.annotate(sample_filters = sample_meta.sample_filters.annotate(
-    qc_metrics_filters=hl.set(hl.parse_json(sample_meta.sample_filters.qc_metrics_filters, hl.tset(hl.tstr)))))
-
-sample_meta = sample_meta.annotate(relatedness_inference = sample_meta.relatedness_inference.annotate(
+        n_called=hl.int64(sample_meta.sex_imputation.impute_sex_stats.n_called),
+        expected_homs=hl.float64(sample_meta.sex_imputation.impute_sex_stats.expected_homs),
+        observed_homs=hl.int64(sample_meta.sex_imputation.impute_sex_stats.observed_homs))),
+    sample_qc=sample_meta.sample_qc.annotate(
+    n_hom_ref=hl.int64(sample_meta.sample_qc.n_hom_ref),
+    n_het=hl.int64(sample_meta.sample_qc.n_het),
+    n_hom_var=hl.int64(sample_meta.sample_qc.n_hom_var),
+    n_non_ref=hl.int64(sample_meta.sample_qc.n_non_ref),
+    n_singleton=hl.int64(sample_meta.sample_qc.n_singleton),
+    n_snp=hl.int64(sample_meta.sample_qc.n_snp),
+    n_insertion=hl.int64(sample_meta.sample_qc.n_insertion),
+    n_deletion=hl.int64(sample_meta.sample_qc.n_deletion),
+    n_transition=hl.int64(sample_meta.sample_qc.n_transition),
+    n_transversion=hl.int64(sample_meta.sample_qc.n_transversion),
+    n_star=hl.int64(sample_meta.sample_qc.n_star)),
+    population_inference=sample_meta.population_inference.annotate(
+    pca_scores=hl.array(hl.parse_json(sample_meta.population_inference.pca_scores, hl.tarray(hl.tfloat64)))),
+    sample_filters=sample_meta.sample_filters.annotate(
+    hard_filters=hl.set(hl.parse_json(sample_meta.sample_filters.hard_filters, hl.tset(hl.tstr))),
+    qc_metrics_filters=hl.set(hl.parse_json(sample_meta.sample_filters.qc_metrics_filters, hl.tset(hl.tstr)))),
+    relatedness_inference=sample_meta.relatedness_inference.annotate(
     relationships=hl.set(hl.parse_json(sample_meta.relatedness_inference.relationships, hl.tset(hl.tstr)))))
+
 
 
 # Merging the metadata table and dense mt
