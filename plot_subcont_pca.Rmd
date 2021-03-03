@@ -1,0 +1,138 @@
+---
+title: "Plotting Subcontinental PCA"
+author: "Mary T. Yohannes"
+date: "3/1/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+# set working directory and import metadata
+```{r}
+setwd("~/Desktop/Broad/alicia/pca_subcont/scores_for_pca")
+hgdp_tgp <- read.delim('~/Desktop/Broad/alicia/pca_subcont/gnomad_meta_v1.tsv', header=T, sep='\t') %>%
+  dplyr::select(s, project_meta.title, starts_with('hgdp_tgp_meta')) 
+```
+
+# AFR PCA 
+```{r}
+ref_AFR <- read.table(gzfile('subcont_pca_AFR_scores.txt.bgz'), header=T)
+proj_AFR <- read.table(gzfile('subcont_pca_AFR_projected_scores.txt.bgz'), header=T)
+
+# combine the ref and proj data into one dataset and then join that to the metadata to add additional info for those samples 
+pca_AFR <- bind_rows(ref_AFR, proj_AFR) %>%
+  left_join(hgdp_tgp)
+ggplot(pca_AFR, aes(x=PC1, y=PC2, color=hgdp_tgp_meta.Population, shape=project_meta.title)) +
+  geom_point() +
+  theme_classic() +
+  labs(title=paste("AFR PCA"))
+```
+
+# AMR PCA 
+```{r}
+ref_AMR <- read.table(gzfile('subcont_pca_AMR_scores.txt.bgz'), header=T)
+proj_AMR <- read.table(gzfile('subcont_pca_AMR_projected_scores.txt.bgz'), header=T)
+
+# combine the ref and proj data into one dataset and then join that to the metadata to add additional info for those samples 
+pca_AMR <- bind_rows(ref_AMR, proj_AMR) %>%
+  left_join(hgdp_tgp)
+ggplot(pca_AMR, aes(x=PC1, y=PC2, color=hgdp_tgp_meta.Population, shape=project_meta.title)) +
+  geom_point() +
+  theme_classic() + 
+  labs(title=paste("AMR PCA"))
+```
+
+# CSA PCA 
+```{r}
+ref_CSA <- read.table(gzfile('subcont_pca_CSA_scores.txt.bgz'), header=T)
+proj_CSA <- read.table(gzfile('subcont_pca_CSA_projected_scores.txt.bgz'), header=T)
+
+# combine the ref and proj data into one dataset and then join that to the metadata to add additional info for those samples 
+pca_CSA <- bind_rows(ref_CSA, proj_CSA) %>%
+  left_join(hgdp_tgp)
+ggplot(pca_CSA, aes(x=PC1, y=PC2, color=hgdp_tgp_meta.Population, shape=project_meta.title)) +
+  geom_point() +
+  theme_classic() +
+  labs(title=paste("CSA PCA"))
+```
+
+# EAS PCA 
+```{r}
+ref_EAS <- read.table(gzfile('subcont_pca_EAS_scores.txt.bgz'), header=T)
+proj_EAS <- read.table(gzfile('subcont_pca_EAS_projected_scores.txt.bgz'), header=T)
+
+# combine the ref and proj data into one dataset and then join that to the metadata to add additional info for those samples 
+pca_EAS <- bind_rows(ref_EAS, proj_EAS) %>%
+  left_join(hgdp_tgp)
+ggplot(pca_EAS, aes(x=PC1, y=PC2, color=hgdp_tgp_meta.Population, shape=project_meta.title)) +
+  geom_point() +
+  theme_classic() +
+  labs(title=paste("EAS PCA"))
+```
+
+# EUR PCA 
+```{r}
+ref_EUR <- read.table(gzfile('subcont_pca_EUR_scores.txt.bgz'), header=T)
+proj_EUR <- read.table(gzfile('subcont_pca_EUR_projected_scores.txt.bgz'), header=T)
+
+# combine the ref and proj data into one dataset and then join that to the metadata to add additional info for those samples 
+pca_EUR <- bind_rows(ref_EUR, proj_EUR) %>%
+  left_join(hgdp_tgp)
+ggplot(pca_EUR, aes(x=PC1, y=PC2, color=hgdp_tgp_meta.Population, shape=project_meta.title)) +
+  geom_point() +
+  theme_classic() +
+  labs(title=paste("EUR PCA"))
+```
+
+# MID PCA 
+```{r}
+ref_MID <- read.table(gzfile('subcont_pca_MID_scores.txt.bgz'), header=T)
+proj_MID <- read.table(gzfile('subcont_pca_MID_projected_scores.txt.bgz'), header=T)
+
+# combine the ref and proj data into one dataset and then join that to the metadata to add additional info for those samples 
+pca_MID <- bind_rows(ref_MID, proj_MID) %>%
+  left_join(hgdp_tgp)
+ggplot(pca_MID, aes(x=PC1, y=PC2, color=hgdp_tgp_meta.Population, shape=project_meta.title)) +
+  geom_point() +
+  theme_classic() + 
+  labs(title=paste("MID PCA"))
+```
+
+# OCE PCA 
+```{r}
+ref_OCE <- read.table(gzfile('subcont_pca_OCE_scores.txt.bgz'), header=T)
+proj_OCE <- read.table(gzfile('subcont_pca_OCE_projected_scores.txt.bgz'), header=T)
+
+# combine the ref and proj data into one dataset and then join that to the metadata to add additional info for those samples 
+pca_OCE <- bind_rows(ref_OCE, proj_OCE) %>%
+  left_join(hgdp_tgp)
+ggplot(pca_OCE, aes(x=PC1, y=PC2, color=hgdp_tgp_meta.Population, shape=project_meta.title)) +
+  geom_point() +
+  theme_classic() +
+  labs(title=paste("OCE PCA"))
+```
+
+# global PCA 
+```{r}
+ref <- read.table(gzfile('~/Desktop/Broad/alicia/pca_subcont/scores.txt.bgz'), header=T)
+proj <- read.table(gzfile('~/Desktop/Broad/alicia/pca_subcont/projected_scores.txt.bgz'), header=T)
+
+# combine the ref and proj data into one dataset and then join that to the metadata to add additional info for those samples 
+pca <- bind_rows(ref, proj) %>%
+  left_join(hgdp_tgp)
+ggplot(pca, aes(x=PC1, y=PC2, color=hgdp_tgp_meta.Genetic.region, shape=project_meta.title)) +
+  geom_point() +
+  theme_classic() +
+  labs(title=paste("Global PCA"))
+```
+
+
+
+
+
+
+
+
