@@ -72,7 +72,7 @@ def haplotype_caller_gatk(b: hb.batch.Batch, input_bam: hb.resource.ResourceGrou
     output_file_name = bam_filename_no_ext + '_' + interval_list_name + '.g.vcf.gz'
     # print(output_file_name)
 
-    variant_calling = b.new_job(name='variant-calling')
+    variant_calling = b.new_job(name=bam_filename_no_ext)
 
     variant_calling.image(docker_image)
     variant_calling.cpu(ncpu)
@@ -104,7 +104,7 @@ def merge_vcf(b: hb.batch.Batch, inputs_vcfs_list_file: hb.resource.ResourceFile
 
     # disk_size = bytes_to_gb((inputs_vcfs_list * 2.5)) + 10
 
-    merge_vcfs = b.new_job(name='merge-vcfs')
+    merge_vcfs = b.new_job(name=output_vcf_name)
     merge_vcfs.image(docker_image)
     merge_vcfs.memory(job_memory)
     # merge_vcfs.memory(disk_size)
