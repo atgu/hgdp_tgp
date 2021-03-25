@@ -157,7 +157,7 @@ def validate_vcf(b: hb.batch.Batch, input_vcf: hb.resource.ResourceFile, ref_fas
 def collect_variant_calling_metrics(b: hb.batch.Batch, input_vcf: hb.resource.ResourceGroup,
                                     dbsnp_vcf_file: hb.resource.ResourceGroup, ref_dict: hb.resource.ResourceGroup,
                                     evaluation_int_list: hb.resource.ResourceFile, metrics_basename: str = None,
-                                    memory: int = 5, docker_img: str = None, out_dir: str = None):
+                                    memory: int = 6, docker_img: str = None, out_dir: str = None):
     docker_image = docker_img if docker_img else 'us.gcr.io/broad-gotc-prod/genomes-in-the-cloud:2.4.3-1564508330'
     job_memory = str(memory) + 'Gi'
 
