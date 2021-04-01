@@ -1,6 +1,5 @@
 import hail as hl
 import re
-from tabulate import tabulate
 
 hl.init()
 
