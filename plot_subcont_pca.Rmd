@@ -1,0 +1,92 @@
+---
+title: "Plotting Subcontinental PCA after outliers were removed"
+author: "Mary T. Yohannes"
+date: "3/22/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(RColorBrewer)
+library(plotly)
+```
+
+# set working directory and import metadata
+```{r}
+setwd("~/Desktop/Broad/alicia/HGDP_TGP/hgdp_tgp")
+hgdp_tgp <- read.delim('~/Desktop/Broad/alicia/pca_subcont/gnomad_meta_v1.tsv', header=T, sep='\t') %>%
+  dplyr::select(s, project_meta.title, starts_with('hgdp_tgp_meta')) 
+```
+
+# function for plotting 
+```{r}
+load_pop_make_pca_plot <- function(pop_name) {
+  # import pc files 
+  ref_unrel <- read.table(gzfile(paste0('scores_for_pca_outliers_removed/subcont_pca_', pop_name, '_scores.txt.bgz')), header=T)
+  proj_rel <- read.table(gzfile(paste0('scores_for_pca_outliers_removed/subcont_pca_', pop_name, '_projected_scores.txt.bgz')), header=T)
+  
+  # combine the ref and proj data into one dataset and then join that to the metadata to add additional info for those samples 
+  pca_subcont <- bind_rows(ref_unrel, proj_rel) %>%
+    left_join(hgdp_tgp)
+  
+  nb.cols <- length(unique(pca_subcont$hgdp_tgp_meta.Population)) # number of subcontinental regions within each region/continent 
+  mycolors <- colorRampPalette(brewer.pal(7, "Set1"))(nb.cols) # set color palettes 
+  
+  # plot pca 
+  p_subcont <- ggplot(pca_subcont, aes(x=PC1, y=PC2, color=hgdp_tgp_meta.Population, shape=project_meta.title, text=s)) +
+    geom_point() +
+    theme_classic() +
+    labs(shape='Project') +
+    scale_color_manual(values=mycolors, name='Population') +
+    labs(title=paste(pop_name, "PCA (after removing outlier)"))
+  
+  ggsave(paste0('pca_plots_outliers_removed/subcont_pca_', pop_name, '.pdf'), p_subcont) # save plot to pdf 
+  ggplotly(p_subcont, tooltip='text') # make plot interactive 
+}
+```
+
+# plot subcontinental pcas for each region (after removing outlier samples)
+```{r}
+# AFR PCA 
+load_pop_make_pca_plot('AFR') 
+
+# AMR PCA 
+load_pop_make_pca_plot('AMR') 
+
+# CSA PCA 
+load_pop_make_pca_plot('CSA') 
+
+# EAS PCA 
+load_pop_make_pca_plot('EAS') 
+
+# EUR PCA 
+load_pop_make_pca_plot('EUR') 
+
+# MID PCA 
+load_pop_make_pca_plot('MID') 
+	
+# OCE PCA 
+load_pop_make_pca_plot('OCE') 
+```
+
+# global PCA (prior to removing any outliers)
+```{r}
+ref <- read.table(gzfile('~/Desktop/Broad/alicia/pca_subcont/scores.txt.bgz'), header=T)
+proj <- read.table(gzfile('~/Desktop/Broad/alicia/pca_subcont/projected_scores.txt.bgz'), header=T)
+
+# combine the ref and proj data into one dataset and then join that to the metadata to add additional info for those samples
+pca <- bind_rows(ref, proj) %>%
+  left_join(hgdp_tgp)
+
+# plot pca 
+p <- ggplot(pca, aes(x=PC1, y=PC2, color=hgdp_tgp_meta.Genetic.region, shape=project_meta.title, text=s)) +
+  geom_point() +
+  theme_classic() +
+  labs(title="Global PCA")
+
+ggsave('pca_plots/global_pca.pdf', p) # save plot as pdf 
+ggplotly(p, tooltip='text') # make plot interactive 
+```
+
+

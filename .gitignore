@@ -127,3 +127,10 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+
+# subcontinent pca related files 
+scores_for_pca/
+pca_plots/
+scores_for_pca_outliers_removed/
+pca_plots_outliers_removed/
