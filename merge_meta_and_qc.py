@@ -26,12 +26,11 @@ var_metadata_path = 'gs://gcp-public-data--gnomad/release/3.1.1/ht/genomes/gnoma
 dense_mt_path = 'gs://hgdp_tgp/output/tgp_hgdp.mt'
 
 
-# reading in Alicia's sample metadata file
+# reading in Alicia's sample metadata file (Note: this file uses the 'v3.1::' prefix as done in gnomAD)
 sample_meta = hl.import_table(sample_metadata_path, impute=True)
 
-# reading in Julia's sample metadata file and stripping 'v3.1::' from the names to match with Konrad's MT
+# reading in Julia's sample metadata file
 jul_meta = hl.read_table(jul_metadata_path)
-jul_meta = jul_meta.key_by(s=jul_meta.s.replace("v3.1::", ""))
 
 # reading in variant qc information
 var_meta = hl.read_table(var_metadata_path)
@@ -74,6 +73,9 @@ new_meta = sample_meta.select(sample_meta.hgdp_tgp_meta, sample_meta.bergstrom)
 
 # creating a table with Julia's metadata and Alicia's metadata
 ht = jul_meta.annotate(**new_meta[jul_meta.s])
+
+# stripping 'v3.1::' from the names to match with Konrad's MT
+ht = ht.key_by(s=ht.s.replace("v3.1::", ""))
 
 ht.write('gs://african-seq-data/hgdp_tgp/hgdp_tgp_sample_metadata.ht')
 
