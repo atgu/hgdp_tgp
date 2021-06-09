@@ -20,7 +20,7 @@ sample_metadata_path = 'gs://african-seq-data/hgdp_tgp/gnomad_meta_v1.tsv'
 jul_metadata_path = ('gs://hgdp_tgp/output/gnomad_v3.1_sample_qc_metadata_hgdp_tgp_subset.ht')
 
 # path for variant qc info
-var_metadata_path = 'gs://gcp-public-data--gnomad/release/3.1/ht/genomes/gnomad.genomes.v3.1.sites.ht'
+var_metadata_path = 'gs://gcp-public-data--gnomad/release/3.1.1/ht/genomes/gnomad.genomes.v3.1.1.sites.ht'
 
 # path for Konrad's densified matrix table
 dense_mt_path = 'gs://hgdp_tgp/output/tgp_hgdp.mt'
@@ -29,8 +29,9 @@ dense_mt_path = 'gs://hgdp_tgp/output/tgp_hgdp.mt'
 # reading in Alicia's sample metadata file
 sample_meta = hl.import_table(sample_metadata_path, impute=True)
 
-# reading in Julia's sample metadata file
+# reading in Julia's sample metadata file and stripping 'v3.1::' from the names to match with Konrad's MT
 jul_meta = hl.read_table(jul_metadata_path)
+jul_meta = jul_meta.key_by(s=jul_meta.s.replace("v3.1::", ""))
 
 # reading in variant qc information
 var_meta = hl.read_table(var_metadata_path)
@@ -80,13 +81,8 @@ ht.write('gs://african-seq-data/hgdp_tgp/hgdp_tgp_sample_metadata.ht')
 ht = hl.read_table('gs://african-seq-data/hgdp_tgp/hgdp_tgp_sample_metadata.ht')
 
 # filtering samples to those who should pass QC
-mt = dense_mt.annotate_cols(**ht[dense_mt.s])
-all_sample_filters = set(ht['sample_filters'])
-# bad_sample_filters were removing whole populations (mostly AFR and OCE) that passed all other QC, bad filters
-bad_sample_filters = {re.sub('fail_', '', x) for x in all_sample_filters if x.startswith('fail_')}
-# this filters to only variants that passed all gnomad QC or only failed filters in bad_sample_filters
-mt_filt = mt.filter_cols((mt['sample_filters']['qc_metrics_filters'].difference(bad_sample_filters).length() == 0))
-
+# this filters to only samples that passed gnomad sample QC hard filters
+mt_filt = mt.filter_cols(~ht.sample_filters.hard_filtered)
 
 # annotating partially filtered dataset with variant metadata
 mt_filt = mt_filt.annotate_rows(**var_meta[mt_filt.locus, mt_filt.alleles])
