@@ -25,13 +25,12 @@ def scatter_interval_list(b: hb.batch.Batch, interval_list_file: hb.resource.Res
                           out_dir: str = None):
     # break the calling interval list into sub-intervals
     docker_image = scatter_img if scatter_img else 'us.gcr.io/broad-gotc-prod/genomes-in-the-cloud:2.4.3-1564508330'
-    job_memory = str(memory) + 'Gi'
 
     scatter_list = b.new_job(name='scatter-interval-list')
 
     scatter_list.image(docker_image)
     scatter_list.cpu(1)  # this should be lower, check DSP pipeline
-    scatter_list.memory(job_memory)
+    scatter_list.memory(f'{memory}Gi')
     scatter_list.command('mkdir /scatter_intervals')
     scatter_list.command(f'java -Xms1g -jar /usr/gitc/picard.jar \
       IntervalListTools \
@@ -67,8 +66,7 @@ def haplotype_caller_gatk(b: hb.batch.Batch, input_bam: hb.resource.ResourceGrou
                           interval_list_file: hb.resource.ResourceFile, bam_filename_no_ext: str = None,
                           out_dir: str = None, interval_list_name: str = None, storage: int = None,
                           contamination: float = None, gatk_img: str = None, memory: float = 6.5, ncpu: int = 2):
-    docker_image = gatk_img if gatk_img else 'us.gcr.io/broad-gatk/gatk:4.0.10.1'
-    job_memory = str(memory) + 'Gi'
+    docker_image = gatk_img if gatk_img else 'us.gcr.io/broad-gatk/gatk:4.1.9.0'
 
     output_file_name = bam_filename_no_ext + '_' + interval_list_name + '.g.vcf.gz'
 
@@ -76,20 +74,19 @@ def haplotype_caller_gatk(b: hb.batch.Batch, input_bam: hb.resource.ResourceGrou
 
     variant_calling.image(docker_image)
     variant_calling.cpu(ncpu)
-    variant_calling.memory(job_memory)
-    variant_calling.storage(storage)
+    variant_calling.memory(f'{memory}Gi')
+    variant_calling.storage(f'{storage}Gi')
     variant_calling.command(f'gatk --java-options "-Xms6000m -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10" \
       HaplotypeCaller \
       -R {ref_fasta.fasta} \
       -I {input_bam.bam} \
       -L {interval_list_file} \
-      -O {output_file_name} \
+      -O {variant_calling.ofile}\
       -contamination {contamination} \
       -G StandardAnnotation -G StandardHCAnnotation -G AS_StandardAnnotation \
-      -new-qual \
       -GQB 10 -GQB 20 -GQB 30 -GQB 40 -GQB 50 -GQB 60 -GQB 70 -GQB 80 -GQB 90 \
       -ERC GVCF')
-    variant_calling.command(f'mv {output_file_name} {variant_calling.ofile}')
+    # variant_calling.command(f'mv {output_file_name} {variant_calling.ofile}')
     b.write_output(variant_calling.ofile, f'{out_dir}/variant-calling/{bam_filename_no_ext}/{output_file_name}')
 
     # We return the `variant_calling` Job object that can be used in downstream jobs.
@@ -100,7 +97,6 @@ def merge_vcf(b: hb.batch.Batch, gvcf_list: List = None, output_vcf_name: str = 
               merge_vcfs_img: str = None, memory: int = 3, out_dir: str = None, storage: int = None):
     # Combine multiple VCFs or GVCFs from scattered HaplotypeCaller runs
     docker_image = merge_vcfs_img if merge_vcfs_img else 'us.gcr.io/broad-gotc-prod/genomes-in-the-cloud:2.4.3-1564508330'
-    job_memory = str(memory) + 'Gi'
     outname = output_vcf_name + '.g.vcf.gz'
 
     # disk_size = bytes_to_gb((inputs_vcfs_list * 2.5)) + 10
@@ -113,9 +109,8 @@ def merge_vcf(b: hb.batch.Batch, gvcf_list: List = None, output_vcf_name: str = 
 
     merge_vcfs = b.new_job(name=output_vcf_name)
     merge_vcfs.image(docker_image)
-    merge_vcfs.memory(job_memory)
-    merge_vcfs.storage(storage)
-    # merge_vcfs.memory(disk_size)
+    merge_vcfs.memory(f'{memory}Gi')
+    merge_vcfs.storage(f'{storage}Gi')
     merge_vcfs.command(f'java -Xms2000m -jar /usr/gitc/picard.jar \
       MergeVcfs \
       {merge_vcf_i} \
@@ -128,21 +123,21 @@ def merge_vcf(b: hb.batch.Batch, gvcf_list: List = None, output_vcf_name: str = 
 
 def validate_vcf(b: hb.batch.Batch, input_vcf: hb.resource.ResourceFile, ref_fasta: hb.resource.ResourceGroup,
                  dbsnp_vcf_file: hb.resource.ResourceGroup, calling_int_file: hb.resource.ResourceFile,
-                 validate_vcf_img: str = None, memory: int = 7, storage: int = None):
+                 validate_vcf_img: str = None, memory: int = 7, storage: int = None,
+                 output_vcf_ind_name: str = None):
     # Validate the (g)VCF output of HaplotypeCaller
 
-    docker_image = validate_vcf_img if validate_vcf_img else 'us.gcr.io/broad-gatk/gatk:4.0.10.1'
-    job_memory = str(memory) + 'Gi'
+    docker_image = validate_vcf_img if validate_vcf_img else 'us.gcr.io/broad-gatk/gatk:4.1.9.0'
 
     # ref_size = bytes_to_gb(ref_fasta) + bytes_to_gb(ref_fasta_index) + bytes_to_gb(ref_dict)
     # disk_size = bytes_to_gb(input_vcf) + bytes_to_gb(dbsnp_vcf) + ref_size + 20
 
-    validate_gvcf = b.new_job(name='validate-vcf')
+    validate_gvcf = b.new_job(name=output_vcf_ind_name)
     validate_gvcf.image(docker_image)
-    validate_gvcf.memory(job_memory)
-    validate_gvcf.storage(storage)
+    validate_gvcf.memory(f'{memory}Gi')
+    validate_gvcf.storage(f'{storage}Gi')
     validate_gvcf.command(f'gatk IndexFeatureFile \
-         -F {input_vcf}')
+             -I {input_vcf}')
     validate_gvcf.command(f'gatk --java-options -Xms6000m \
       ValidateVariants \
       -V {input_vcf} \
@@ -160,14 +155,11 @@ def collect_variant_calling_metrics(b: hb.batch.Batch, input_vcf: hb.resource.Re
                                     evaluation_int_list: hb.resource.ResourceFile, metrics_basename: str = None,
                                     memory: int = 6, docker_img: str = None, storage: int = None, out_dir: str = None):
     docker_image = docker_img if docker_img else 'us.gcr.io/broad-gotc-prod/genomes-in-the-cloud:2.4.3-1564508330'
-    job_memory = str(memory) + 'Gi'
 
-    # disk_size = bytes_to_gb(input_vcf) + bytes_to_gb(dbsnp_vcf) + 20
-
-    collect_vc_metrics = b.new_job(name='collect-variant-calling-metrics')
+    collect_vc_metrics = b.new_job(name=metrics_basename)
     collect_vc_metrics.image(docker_image)
-    collect_vc_metrics.memory(job_memory)
-    collect_vc_metrics.storage(storage)
+    collect_vc_metrics.memory(f'{memory}Gi')
+    collect_vc_metrics.storage(f'{storage}Gi')
     collect_vc_metrics.command(f'java -Xms2000m -jar /usr/gitc/picard.jar \
       CollectVariantCallingMetrics \
       INPUT={input_vcf.vcf} \
@@ -188,20 +180,20 @@ def collect_variant_calling_metrics(b: hb.batch.Batch, input_vcf: hb.resource.Re
 
 
 def index_gvcf(b: hb.batch.Batch, input_vcf: hb.resource.ResourceFile, output_vcf_ind_name: str = None, memory: int = 3,
-               docker_img: str = None, out_dir: str = None):
+               storage: int = 5, docker_img: str = None, out_dir: str = None):
 
-    docker_image = docker_img if docker_img else 'us.gcr.io/broad-gatk/gatk:4.0.10.1'
-    job_memory = str(memory) + 'Gi'
+    docker_image = docker_img if docker_img else 'us.gcr.io/broad-gatk/gatk:4.1.4.1'
     outname = output_vcf_ind_name + '.g.vcf.gz.tbi'
 
     index_gvcf_file = b.new_job(name=f'index-{output_vcf_ind_name}')
     index_gvcf_file.image(docker_image)
-    index_gvcf_file.memory(job_memory)
+    index_gvcf_file.memory(f'{memory}Gi')
+    index_gvcf_file.storage(f'{storage}Gi')
     index_gvcf_file.command(f'gatk IndexFeatureFile \
-         -F {input_vcf} \
+         -I {input_vcf} \
          -O {outname}')
-    index_gvcf_file.command(f'mv {outname} {index_gvcf_file.gvcfind}')
-    b.write_output(index_gvcf_file.gvcfind, f'{out_dir}/merged-gvcf/{output_vcf_ind_name}/{outname}')
+    index_gvcf_file.command(f'mv {outname} {index_gvcf_file.ofile}')
+    b.write_output(index_gvcf_file.ofile, f'{out_dir}/merged-gvcf/{output_vcf_ind_name}/{outname}')
 
     return index_gvcf_file
 
@@ -337,7 +329,8 @@ if __name__ == '__main__':
 
         validate_gvcf_out = validate_vcf(b=validate_index_gvcf, input_vcf=in_vcf, ref_fasta=fasta_validate,
                                          dbsnp_vcf_file=dbsnp_vcf_validate, storage=validate_disk_size,
-                                         calling_int_file=calling_interval_list_validate)
+                                         calling_int_file=calling_interval_list_validate,
+                                         output_vcf_ind_name=bam_no_ext)
 
         gvcf_index_file = index_gvcf(b=validate_index_gvcf, input_vcf=in_vcf, output_vcf_ind_name=bam_no_ext,
                                      out_dir=args.out_dir)
