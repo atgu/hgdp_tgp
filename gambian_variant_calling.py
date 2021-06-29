@@ -66,7 +66,7 @@ def haplotype_caller_gatk(b: hb.batch.Batch, input_bam: hb.resource.ResourceGrou
                           interval_list_file: hb.resource.ResourceFile, bam_filename_no_ext: str = None,
                           out_dir: str = None, interval_list_name: str = None, storage: int = None,
                           contamination: float = None, gatk_img: str = None, memory: float = 6.5, ncpu: int = 2):
-    docker_image = gatk_img if gatk_img else 'us.gcr.io/broad-gatk/gatk:4.1.9.0'
+    docker_image = gatk_img if gatk_img else 'us.gcr.io/broad-gatk/gatk:4.2.0.0'
 
     output_file_name = bam_filename_no_ext + '_' + interval_list_name + '.g.vcf.gz'
 
@@ -127,7 +127,7 @@ def validate_vcf(b: hb.batch.Batch, input_vcf: hb.resource.ResourceFile, ref_fas
                  output_vcf_ind_name: str = None):
     # Validate the (g)VCF output of HaplotypeCaller
 
-    docker_image = validate_vcf_img if validate_vcf_img else 'us.gcr.io/broad-gatk/gatk:4.1.9.0'
+    docker_image = validate_vcf_img if validate_vcf_img else 'us.gcr.io/broad-gatk/gatk:4.2.0.0'
 
     # ref_size = bytes_to_gb(ref_fasta) + bytes_to_gb(ref_fasta_index) + bytes_to_gb(ref_dict)
     # disk_size = bytes_to_gb(input_vcf) + bytes_to_gb(dbsnp_vcf) + ref_size + 20
@@ -182,7 +182,7 @@ def collect_variant_calling_metrics(b: hb.batch.Batch, input_vcf: hb.resource.Re
 def index_gvcf(b: hb.batch.Batch, input_vcf: hb.resource.ResourceFile, output_vcf_ind_name: str = None, memory: int = 3,
                storage: int = 5, docker_img: str = None, out_dir: str = None):
 
-    docker_image = docker_img if docker_img else 'us.gcr.io/broad-gatk/gatk:4.1.4.1'
+    docker_image = docker_img if docker_img else 'us.gcr.io/broad-gatk/gatk:4.2.0.0'
     outname = output_vcf_ind_name + '.g.vcf.gz.tbi'
 
     index_gvcf_file = b.new_job(name=f'index-{output_vcf_ind_name}')
