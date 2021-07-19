@@ -4,7 +4,7 @@ import argparse
 import hail as hl
 
 
-def combine_gvcfs(gvcf_input_list: str, out_path: str = 'gs://african-seq-data/gambian-genomes/',
+def combine_gvcfs(gvcf_input_list: str, out_path: str = 'gs://african-seq-data/gambian-genomes/COMBINED_GVCFS/',
                   out_mt_name: str = 'gambian_genomes_merged_gvcfs', temp_bucket: str = 'gs://african-seq-data',
                   reference: str = 'GRCh38', use_genome_default_intervals: bool = True, overwrite: bool = True,
                   key_by_locus_and_alleles: bool = True):
@@ -40,18 +40,18 @@ def combine_gvcfs(gvcf_input_list: str, out_path: str = 'gs://african-seq-data/g
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--gvcfs-list', type=str, required=True)
+    parser.add_argument('--gvcfs-list', type=str, default='gs://african-seq-data/gambian-genomes/gvcfs_to_merge.txt')
     parser.add_argument('--out-dir', type=str, default='gs://african-seq-data/gambian-genomes/')
     parser.add_argument('--out-name', default='gambian_genomes_merged_gvcfs')
     parser.add_argument('--tmp-bucket', default='gs://african-seq-data')
     parser.add_argument('--reference', type=str, default='GRCh38')
-    parser.add_argument('--overwrite', action='store_true')
+    parser.add_argument('--overwrite', action='store_false')
 
     args = parser.parse_args()
 
     print("Combining GVCFs into a multi-sample matrix table")
     combine_gvcfs(gvcf_input_list=args.gvcfs_list, out_path=args.out_dir, out_mt_name=args.out_name,
-                  temp_bucket=args.tmp_bucket, reference=args.reference, overwrite=args.overwite)
+                  temp_bucket=args.tmp_bucket, reference=args.reference, overwrite=args.overwrite)
 
     print("Done!")
 
