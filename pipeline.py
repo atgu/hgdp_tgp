@@ -45,10 +45,10 @@ if __name__ == '__main__':
     if args.run == "vc":
         print('Running Variant Calling Only')
         var_call_pipeline(input_bams=args.input_bams, ref_fasta=args.ref_fasta, ref_ind=args.ref_index,
-                                  ref_dict=args.ref_dict, calling_int_list=args.calling_interval_list,
-                                  evaluation_int_list=args.evaluation_interval_list, dbsnp_vcf=args.dbsnp_vcf,
-                                  dbsnp_vcf_ind=args.dbsnp_vcf_ind, contamination=args.contamination,
-                                  scatter_count=args.scatter_count, out_dir=args.out_dir, backend=backend)
+                          ref_dict=args.ref_dict, calling_int_list=args.calling_interval_list,
+                          evaluation_int_list=args.evaluation_interval_list, dbsnp_vcf=args.dbsnp_vcf,
+                          dbsnp_vcf_ind=args.dbsnp_vcf_ind, contamination=args.contamination,
+                          scatter_count=args.scatter_count, out_dir=args.out_dir, backend=backend)
     elif args.run == 'align':
         print('Running Alignment Only')
     else:
