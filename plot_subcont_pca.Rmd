@@ -1,5 +1,5 @@
 ---
-title: "Plotting Subcontinental PCA after outliers were removed"
+title: "Plotting Subcontinental PCA before and after outliers were removed (UPDATED)"
 author: "Mary T. Yohannes"
 date: "3/22/2021"
 output: html_document
@@ -10,21 +10,26 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(RColorBrewer)
 library(plotly)
+library(cowplot)
 ```
 
-# set working directory and import metadata
+# 1) set working directory and import metadata
 ```{r}
 setwd("~/Desktop/Broad/alicia/HGDP_TGP/hgdp_tgp")
 hgdp_tgp <- read.delim('~/Desktop/Broad/alicia/pca_subcont/gnomad_meta_v1.tsv', header=T, sep='\t') %>%
   dplyr::select(s, project_meta.title, starts_with('hgdp_tgp_meta')) 
+
+# some sample IDs have 'v3.1::' prefix as done in gnomAD so stripping that in order to match correctly with the pc score files 
+hgdp_tgp$s <- gsub('v3.1::', '', hgdp_tgp$s)
 ```
 
-# function for plotting 
+# Before Removing Outlier Samples
+# 2a) function for plotting only pc1 & 2 and save as a pdf 
 ```{r}
 load_pop_make_pca_plot <- function(pop_name) {
-  # import pc files 
-  ref_unrel <- read.table(gzfile(paste0('scores_for_pca_outliers_removed/subcont_pca_', pop_name, '_scores.txt.bgz')), header=T)
-  proj_rel <- read.table(gzfile(paste0('scores_for_pca_outliers_removed/subcont_pca_', pop_name, '_projected_scores.txt.bgz')), header=T)
+  # import pc scores 
+  ref_unrel <- read.table(gzfile(paste0('UPDATED_scores_for_pca_preoutlier/subcont_pca_', pop_name, '_scores.txt.bgz')), header=T)
+  proj_rel <- read.table(gzfile(paste0('UPDATED_scores_for_pca_preoutlier/subcont_pca_', pop_name, '_projected_scores.txt.bgz')), header=T)
   
   # combine the ref and proj data into one dataset and then join that to the metadata to add additional info for those samples 
   pca_subcont <- bind_rows(ref_unrel, proj_rel) %>%
@@ -39,14 +44,14 @@ load_pop_make_pca_plot <- function(pop_name) {
     theme_classic() +
     labs(shape='Project') +
     scale_color_manual(values=mycolors, name='Population') +
-    labs(title=paste(pop_name, "PCA (after removing outlier)"))
+    labs(title=paste(pop_name, "UPDATED PCA (before removing outliers)"))
   
-  ggsave(paste0('pca_plots_outliers_removed/subcont_pca_', pop_name, '.pdf'), p_subcont) # save plot to pdf 
+  ggsave(paste0('UPDATED_pca_plots_preoutlier/UPDATED_preoutlier_subcont_pca_1n2_', pop_name, '.pdf'), p_subcont) # save plot to pdf 
   ggplotly(p_subcont, tooltip='text') # make plot interactive 
 }
 ```
 
-# plot subcontinental pcas for each region (after removing outlier samples)
+# 2b) plot subcontinental pcas (only pc1 & 2) for each region 
 ```{r}
 # AFR PCA 
 load_pop_make_pca_plot('AFR') 
@@ -70,10 +75,97 @@ load_pop_make_pca_plot('MID')
 load_pop_make_pca_plot('OCE') 
 ```
 
-# global PCA (prior to removing any outliers)
+# 3a) function to plot subcont PCAs in a grid upto the 8th PC 
 ```{r}
-ref <- read.table(gzfile('~/Desktop/Broad/alicia/pca_subcont/scores.txt.bgz'), header=T)
-proj <- read.table(gzfile('~/Desktop/Broad/alicia/pca_subcont/projected_scores.txt.bgz'), header=T)
+single_pca_plot <- function(pca_subcont, first_PC, second_PC, pop_name, bottom=F) {
+  nb.cols <- length(unique(pca_subcont$hgdp_tgp_meta.Population))
+  mycolors <- colorRampPalette(brewer.pal(7, "Set1"))(nb.cols)
+  is_tgp <- unique(pca_subcont$hgdp_tgp_meta.Population) %in% subset(pca_subcont, hgdp_tgp_meta.Project=='1000 Genomes')$hgdp_tgp_meta.Population
+  myshapes <- ifelse(is_tgp, 16, 4)
+  
+  p_subcont <- ggplot(pca_subcont, aes_string(x=first_PC, y=second_PC, color='hgdp_tgp_meta.Population', shape='hgdp_tgp_meta.Population', text='s')) +
+    geom_point(size=2) +
+    theme_classic() +
+    scale_shape_manual(values=myshapes, labels=unique(pca_subcont$hgdp_tgp_meta.Population), name='Population') +
+    scale_color_manual(values=mycolors, labels=unique(pca_subcont$hgdp_tgp_meta.Population), name='Population') +
+    labs(title=pop_name) +
+    theme(text = element_text(size=14, color='black'),
+          legend.title = element_text(size = 12), 
+          legend.text = element_text(size = 9),
+          legend.key.size = unit(0.7, "lines")) +
+    guides(shape = guide_legend(override.aes = list(size = 0.85)))
+  if(bottom) {
+    p_subcont <- p_subcont +
+      theme(axis.text = element_text(color='black'),
+            legend.title = element_text(size = 12), 
+            legend.text = element_text(size = 9),
+            legend.key.size = unit(0.7, "lines"),
+            legend.position="bottom") +
+      guides(fill=guide_legend(ncol=1,byrow=FALSE, title.position="top"),
+             shape=guide_legend(ncol=1,byrow=FALSE, title.position="top"))
+  }
+  return(p_subcont)
+}
+
+
+load_pop_make_pca_plot <- function(pop_name) {
+  # subcont PCA 
+  ref_unrel <- read.table(gzfile(paste0('UPDATED_scores_for_pca_preoutlier/subcont_pca_', pop_name, '_scores.txt.bgz')), header=T)
+  proj_rel <- read.table(gzfile(paste0('UPDATED_scores_for_pca_preoutlier/subcont_pca_', pop_name, '_projected_scores.txt.bgz')), header=T)
+  
+  # combine the ref and proj data into one dataset and then join that to the metadata to add additional info for those samples 
+  pca_subcont <- bind_rows(ref_unrel, proj_rel) %>%
+    left_join(hgdp_tgp) %>%
+    arrange(hgdp_tgp_meta.Population)
+  
+  p_1_2 <- single_pca_plot(pca_subcont, 'PC1', 'PC2', pop_name)
+  p_1_2_bottom <- single_pca_plot(pca_subcont, 'PC1', 'PC2', pop_name, TRUE) 
+  p_3_4 <- single_pca_plot(pca_subcont, 'PC3', 'PC4', pop_name)
+  p_5_6 <- single_pca_plot(pca_subcont, 'PC5', 'PC6', pop_name)
+  p_7_8 <- single_pca_plot(pca_subcont, 'PC7', 'PC8', pop_name)
+  p_subcont <- plot_grid(p_1_2 + theme(legend.position="none"), p_3_4 + theme(legend.position="none"), 
+                         p_5_6 + theme(legend.position="none"), p_7_8 + theme(legend.position="none"), nrow=1)
+  legend <- get_legend(p_1_2)
+  p_subcont_legend <- plot_grid(p_subcont, legend, rel_widths = c(4, 1))
+  
+  ggsave(paste0('UPDATED_pca_plots_preoutlier/UPDATED_preoutlier_subcont_pca_1to8', pop_name, '.pdf'), p_subcont_legend, width=15, height=4)
+  
+  ggplotly(p_subcont_legend, tooltip='text')
+  return(list(p_subcont_legend, p_1_2_bottom))
+}
+```
+
+# 3b) plot subcontinental pcas in a grid upto the 8th PC 
+```{r}
+p_AFR <- load_pop_make_pca_plot('AFR') # outlier: NA20314 (PC1/2), NA20299 (PC3/4), HG01880 (PC6), HG01881 (PC6)
+p_AMR <- load_pop_make_pca_plot('AMR')
+p_CSA <- load_pop_make_pca_plot('CSA') # outlier: HGDP00130 (PC1/2), HGDP00013 (PC4&5), HGDP00150 (PC5), HGDP00029
+p_EAS <- load_pop_make_pca_plot('EAS') # outlier: HGDP01298 (PC3), HGDP01303 (PC4&5), LP6005443-DNA_B02 (PC5), HGDP01300 (PC6)
+p_EUR <- load_pop_make_pca_plot('EUR') # outlier: HG01628 (PC5), HG01629 (PC5), HG01630 (PC5), HG01694 (PC6), HG01696 (PC6)
+p_MID <- load_pop_make_pca_plot('MID') # outlier: HGDP00621, HGDP01270, HGDP01271
+p_OCE <- load_pop_make_pca_plot('OCE') # outlier: HGDP00554 - not actually an outlier when looking at global PCs
+
+# all pc plots together in a grid - 4 per region (upto the 8th pc)
+p_region_outliers <- plot_grid(p_AFR[[1]], p_AMR[[1]], p_CSA[[1]], p_EAS[[1]], p_EUR[[1]], p_MID[[1]], p_OCE[[1]], 
+                               labels=LETTERS[1:7], ncol=1, align='v')
+
+# save as pdf and png
+ggsave('UPDATED_pca_plots_preoutlier/UPDATED_preoutlier_regions_pca_1to8.pdf', p_region_outliers, height=28, width=15)
+ggsave('UPDATED_pca_plots_preoutlier/UPDATED_preoutlier_regions_pca_1to8.png', p_region_outliers, height=15, width=12)
+
+# just pc1 & 2 in a grid for all the regions - if the plots that are individually produced in 2a and 2b were put together in a grid  
+p_region_outliers_1_2 <- plot_grid(p_AFR[[2]], p_AMR[[2]], p_CSA[[2]], p_EAS[[2]], p_EUR[[2]], p_MID[[2]], p_OCE[[2]], nrow=1, align='h', labels=LETTERS[5:11])
+
+# save as pdf and png
+#ggsave('UPDATED_pca_plots_preoutlier/UPDATED_preoutlier_regions_pca_1n2.pdf', p_region_outliers_1_2, height=28, width=15)
+#ggsave('UPDATED_pca_plots_preoutlier/UPDATED_preoutlier_regions_pca_1n2.png', p_region_outliers_1_2, height=15, width=12)
+```
+
+
+# 4a) global PCA - only pc1 & 2 
+```{r}
+ref <- read.table(gzfile('~/Desktop/Broad/alicia/HGDP_TGP/hgdp_tgp/UPDATED_scores_for_pca_preoutlier/global_scores.txt.bgz'), header=T)
+proj <- read.table(gzfile('~/Desktop/Broad/alicia/HGDP_TGP/hgdp_tgp/UPDATED_scores_for_pca_preoutlier/global_projected_scores.txt.bgz'), header=T)
 
 # combine the ref and proj data into one dataset and then join that to the metadata to add additional info for those samples
 pca <- bind_rows(ref, proj) %>%
@@ -83,10 +175,283 @@ pca <- bind_rows(ref, proj) %>%
 p <- ggplot(pca, aes(x=PC1, y=PC2, color=hgdp_tgp_meta.Genetic.region, shape=project_meta.title, text=s)) +
   geom_point() +
   theme_classic() +
-  labs(title="Global PCA")
+  labs(title="UPDATED Global PCA (before removing outliers)")
 
-ggsave('pca_plots/global_pca.pdf', p) # save plot as pdf 
+ggsave('UPDATED_pca_plots_preoutlier/UPDATED_global_pca.pdf', p) # save plot as pdf 
 ggplotly(p, tooltip='text') # make plot interactive 
 ```
 
+# 4b) function to plot global pca in a grid upto the 8th PC 
+```{r}
+sin_pca_plot <- function(pca_subcont, first_PC, second_PC, pop_name, bottom=F) {
+  nb.cols <- length(unique(pca_subcont$hgdp_tgp_meta.Population))
+  mycolors <- colorRampPalette(brewer.pal(7, "Set1"))(nb.cols)
+  is_tgp <- unique(pca_subcont$hgdp_tgp_meta.Population) %in% subset(pca_subcont, hgdp_tgp_meta.Project=='1000 Genomes')$hgdp_tgp_meta.Population
+  myshapes <- ifelse(is_tgp, 16, 4)
+  
+  p_subcont <- ggplot(pca_subcont, aes_string(x=first_PC, y=second_PC, color='hgdp_tgp_meta.Population', shape='hgdp_tgp_meta.Population', text='s')) +
+    geom_point(size=2) +
+    theme_classic() +
+    scale_shape_manual(values=myshapes, labels=unique(pca_subcont$hgdp_tgp_meta.Population), name='Population') +
+    scale_color_manual(values=mycolors, labels=unique(pca_subcont$hgdp_tgp_meta.Population), name='Population') +
+    labs(title='global') +
+    theme(text = element_text(size=14, color='black'),
+          legend.title = element_text(size = 12), 
+          legend.text = element_text(size = 9),
+          legend.key.size = unit(0.7, "lines")) +
+    guides(shape = guide_legend(override.aes = list(size = 0.85)))
+  if(bottom) {
+    p_subcont <- p_subcont +
+      theme(axis.text = element_text(color='black'),
+            legend.title = element_text(size = 12), 
+            legend.text = element_text(size = 9),
+            legend.key.size = unit(0.7, "lines"),
+            legend.position="bottom") +
+      guides(fill=guide_legend(ncol=1,byrow=FALSE, title.position="top"),
+             shape=guide_legend(ncol=1,byrow=FALSE, title.position="top"))
+  }
+  return(p_subcont)
+}
+```
 
+# 4c) plot global pcs and save as pdf 
+````{r}
+ref_unrel <- read.table(gzfile('~/Desktop/Broad/alicia/HGDP_TGP/hgdp_tgp/UPDATED_scores_for_pca_preoutlier/global_scores.txt.bgz'), header=T)
+proj_rel <- read.table(gzfile('~/Desktop/Broad/alicia/HGDP_TGP/hgdp_tgp/UPDATED_scores_for_pca_preoutlier/global_projected_scores.txt.bgz'), header=T)
+
+# combine the ref and proj data into one dataset and then join that to the metadata to add additional info for those samples 
+pca_subcont <- bind_rows(ref_unrel, proj_rel) %>%
+  left_join(hgdp_tgp) %>%
+  arrange(hgdp_tgp_meta.Population)
+  
+p_1_2 <- sin_pca_plot(pca_subcont, 'PC1', 'PC2')
+p_1_2_bottom <- sin_pca_plot(pca_subcont, 'PC1', 'PC2', TRUE) 
+p_3_4 <- sin_pca_plot(pca_subcont, 'PC3', 'PC4')
+p_5_6 <- sin_pca_plot(pca_subcont, 'PC5', 'PC6')
+p_7_8 <- sin_pca_plot(pca_subcont, 'PC7', 'PC8')
+p_subcont <- plot_grid(p_1_2 + theme(legend.position="none"), p_3_4 + theme(legend.position="none"), 
+                         p_5_6 + theme(legend.position="none"), p_7_8 + theme(legend.position="none"), nrow=1)
+legend <- get_legend(p_1_2)
+p_subcont_legend <- plot_grid(p_subcont, legend, rel_widths = c(4, 1))
+  
+ggsave(paste0('UPDATED_pca_plots_preoutlier/UPDATED_global_pca_1to8.pdf'), p_subcont_legend, width=15, height=4)
+  
+ggplotly(p_subcont_legend, tooltip='text')
+```
+
+# ----------------------------------------------------------------------------------------
+
+# After Removing Outlier Samples
+# 5a) function for plotting only pc1 & 2 and save as a pdf 
+```{r}
+load_pop_make_pca_plot <- function(pop_name) {
+  # import pc scores 
+  ref_unrel <- read.table(gzfile(paste0('UPDATED_scores_for_pca_postoutlier/subcont_pca_', pop_name, '_scores.txt.bgz')), header=T)
+  proj_rel <- read.table(gzfile(paste0('UPDATED_scores_for_pca_postoutlier/subcont_pca_', pop_name, '_projected_scores.txt.bgz')), header=T)
+  
+  # combine the ref and proj data into one dataset and then join that to the metadata to add additional info for those samples 
+  pca_subcont <- bind_rows(ref_unrel, proj_rel) %>%
+    left_join(hgdp_tgp)
+  
+  nb.cols <- length(unique(pca_subcont$hgdp_tgp_meta.Population)) # number of subcontinental regions within each region/continent 
+  mycolors <- colorRampPalette(brewer.pal(7, "Set1"))(nb.cols) # set color palettes 
+  
+  # plot pca 
+  p_subcont <- ggplot(pca_subcont, aes(x=PC1, y=PC2, color=hgdp_tgp_meta.Population, shape=project_meta.title, text=s)) +
+    geom_point() +
+    theme_classic() +
+    labs(shape='Project') +
+    scale_color_manual(values=mycolors, name='Population') +
+    labs(title=paste(pop_name, "UPDATED PCA (after removing outliers)"))
+  
+  ggsave(paste0('UPDATED_pca_plots_postoutlier/UPDATED_postoutlier_subcont_pca_1n2_', pop_name, '.pdf'), p_subcont) # save plot to pdf 
+  ggplotly(p_subcont, tooltip='text') # make plot interactive 
+}
+```
+
+# 5b) plot subcontinental pcas (only pc1 & 2) for each region 
+```{r}
+# AFR PCA 
+load_pop_make_pca_plot('AFR') 
+
+# AMR PCA 
+load_pop_make_pca_plot('AMR') 
+
+# CSA PCA 
+load_pop_make_pca_plot('CSA') 
+
+# EAS PCA 
+load_pop_make_pca_plot('EAS') 
+
+# EUR PCA 
+load_pop_make_pca_plot('EUR') 
+
+# MID PCA 
+load_pop_make_pca_plot('MID') 
+	
+# OCE PCA 
+load_pop_make_pca_plot('OCE') 
+```
+
+# 6a) function to plot subcont PCAs in a grid upto the 8th PC 
+```{r}
+single_pca_plot <- function(pca_subcont, first_PC, second_PC, pop_name, bottom=F) {
+  nb.cols <- length(unique(pca_subcont$hgdp_tgp_meta.Population))
+  mycolors <- colorRampPalette(brewer.pal(7, "Set1"))(nb.cols)
+  is_tgp <- unique(pca_subcont$hgdp_tgp_meta.Population) %in% subset(pca_subcont, hgdp_tgp_meta.Project=='1000 Genomes')$hgdp_tgp_meta.Population
+  myshapes <- ifelse(is_tgp, 16, 4)
+  
+  p_subcont <- ggplot(pca_subcont, aes_string(x=first_PC, y=second_PC, color='hgdp_tgp_meta.Population', shape='hgdp_tgp_meta.Population', text='s')) +
+    geom_point(size=2) +
+    theme_classic() +
+    scale_shape_manual(values=myshapes, labels=unique(pca_subcont$hgdp_tgp_meta.Population), name='Population') +
+    scale_color_manual(values=mycolors, labels=unique(pca_subcont$hgdp_tgp_meta.Population), name='Population') +
+    labs(title=pop_name) +
+    theme(text = element_text(size=14, color='black'),
+          legend.title = element_text(size = 12), 
+          legend.text = element_text(size = 9),
+          legend.key.size = unit(0.7, "lines")) +
+    guides(shape = guide_legend(override.aes = list(size = 0.85)))
+  if(bottom) {
+    p_subcont <- p_subcont +
+      theme(axis.text = element_text(color='black'),
+            legend.title = element_text(size = 12), 
+            legend.text = element_text(size = 9),
+            legend.key.size = unit(0.7, "lines"),
+            legend.position="bottom") +
+      guides(fill=guide_legend(ncol=1,byrow=FALSE, title.position="top"),
+             shape=guide_legend(ncol=1,byrow=FALSE, title.position="top"))
+  }
+  return(p_subcont)
+}
+
+
+load_pop_make_pca_plot <- function(pop_name) {
+  # subcont PCA 
+  ref_unrel <- read.table(gzfile(paste0('UPDATED_scores_for_pca_postoutlier/subcont_pca_', pop_name, '_scores.txt.bgz')), header=T)
+  proj_rel <- read.table(gzfile(paste0('UPDATED_scores_for_pca_postoutlier/subcont_pca_', pop_name, '_projected_scores.txt.bgz')), header=T)
+  
+  # combine the ref and proj data into one dataset and then join that to the metadata to add additional info for those samples 
+  pca_subcont <- bind_rows(ref_unrel, proj_rel) %>%
+    left_join(hgdp_tgp) %>%
+    arrange(hgdp_tgp_meta.Population)
+  
+  p_1_2 <- single_pca_plot(pca_subcont, 'PC1', 'PC2', pop_name)
+  p_1_2_bottom <- single_pca_plot(pca_subcont, 'PC1', 'PC2', pop_name, TRUE) 
+  p_3_4 <- single_pca_plot(pca_subcont, 'PC3', 'PC4', pop_name)
+  p_5_6 <- single_pca_plot(pca_subcont, 'PC5', 'PC6', pop_name)
+  p_7_8 <- single_pca_plot(pca_subcont, 'PC7', 'PC8', pop_name)
+  p_subcont <- plot_grid(p_1_2 + theme(legend.position="none"), p_3_4 + theme(legend.position="none"), 
+                         p_5_6 + theme(legend.position="none"), p_7_8 + theme(legend.position="none"), nrow=1)
+  legend <- get_legend(p_1_2)
+  p_subcont_legend <- plot_grid(p_subcont, legend, rel_widths = c(4, 1))
+  
+  ggsave(paste0('UPDATED_pca_plots_postoutlier/UPDATED_postoutlier_subcont_pca_1to8', pop_name, '.pdf'), p_subcont_legend, width=15, height=4)
+  
+  ggplotly(p_subcont_legend, tooltip='text')
+  return(list(p_subcont_legend, p_1_2_bottom))
+}
+```
+
+# 6b) plot subcontinental pcas in a grid upto the 8th PC 
+```{r}
+p_AFR <- load_pop_make_pca_plot('AFR') # outlier: NA20314 (PC1/2), NA20299 (PC3/4), HG01880 (PC6), HG01881 (PC6)
+p_AMR <- load_pop_make_pca_plot('AMR')
+p_CSA <- load_pop_make_pca_plot('CSA') # outlier: HGDP00130 (PC1/2), HGDP00013 (PC4&5), HGDP00150 (PC5), HGDP00029
+p_EAS <- load_pop_make_pca_plot('EAS') # outlier: HGDP01298 (PC3), HGDP01303 (PC4&5), LP6005443-DNA_B02 (PC5), HGDP01300 (PC6)
+p_EUR <- load_pop_make_pca_plot('EUR') # outlier: HG01628 (PC5), HG01629 (PC5), HG01630 (PC5), HG01694 (PC6), HG01696 (PC6)
+p_MID <- load_pop_make_pca_plot('MID') # outlier: HGDP00621, HGDP01270, HGDP01271
+p_OCE <- load_pop_make_pca_plot('OCE') # outlier: HGDP00554 - not actually an outlier when looking at global PCs
+
+# all pc plots together in a grid - 4 per region (upto the 8th pc)
+p_region_outliers <- plot_grid(p_AFR[[1]], p_AMR[[1]], p_CSA[[1]], p_EAS[[1]], p_EUR[[1]], p_MID[[1]], p_OCE[[1]], 
+                               labels=LETTERS[1:7], ncol=1, align='v')
+
+# save as pdf and png
+ggsave('UPDATED_pca_plots_postoutlier/UPDATED_postoutlier_regions_pca_1to8.pdf', p_region_outliers, height=28, width=15)
+ggsave('UPDATED_pca_plots_postoutlier/UPDATED_postoutlier_regions_pca_1to8.png', p_region_outliers, height=15, width=12)
+
+# just pc1 & 2 in a grid for all the regions - if the plots that are individually produced in 2a and 2b were put together in a grid  
+p_region_outliers_1_2 <- plot_grid(p_AFR[[2]], p_AMR[[2]], p_CSA[[2]], p_EAS[[2]], p_EUR[[2]], p_MID[[2]], p_OCE[[2]], nrow=1, align='h', labels=LETTERS[5:11])
+
+# save as pdf and png
+#ggsave('UPDATED_pca_plots_postoutlier/UPDATED_postoutlier_regions_pca_1n2.pdf', p_region_outliers_1_2, height=28, width=15)
+#ggsave('UPDATED_pca_plots_postoutlier/UPDATED_postoutlier_regions_pca_1n2.png', p_region_outliers_1_2, height=15, width=12)
+```
+
+# 7a) global PCA - only pc1 & 2 
+```{r}
+ref <- read.table(gzfile('~/Desktop/Broad/alicia/HGDP_TGP/hgdp_tgp/UPDATED_scores_for_pca_postoutlier/global_scores.txt.bgz'), header=T)
+proj <- read.table(gzfile('~/Desktop/Broad/alicia/HGDP_TGP/hgdp_tgp/UPDATED_scores_for_pca_postoutlier/global_projected_scores.txt.bgz'), header=T)
+
+# combine the ref and proj data into one dataset and then join that to the metadata to add additional info for those samples
+pca <- bind_rows(ref, proj) %>%
+  left_join(hgdp_tgp)
+
+# plot pca 
+p <- ggplot(pca, aes(x=PC1, y=PC2, color=hgdp_tgp_meta.Genetic.region, shape=project_meta.title, text=s)) +
+  geom_point() +
+  theme_classic() +
+  labs(title="UPDATED Global PCA (after removing outliers)")
+
+ggsave('UPDATED_pca_plots_postoutlier/UPDATED_global_pca.pdf', p) # save plot as pdf 
+ggplotly(p, tooltip='text') # make plot interactive 
+```
+
+# 7b) function to plot global pca in a grid upto the 8th PC 
+```{r}
+sin_pca_plot <- function(pca_subcont, first_PC, second_PC, pop_name, bottom=F) {
+  nb.cols <- length(unique(pca_subcont$hgdp_tgp_meta.Population))
+  mycolors <- colorRampPalette(brewer.pal(7, "Set1"))(nb.cols)
+  is_tgp <- unique(pca_subcont$hgdp_tgp_meta.Population) %in% subset(pca_subcont, hgdp_tgp_meta.Project=='1000 Genomes')$hgdp_tgp_meta.Population
+  myshapes <- ifelse(is_tgp, 16, 4)
+  
+  p_subcont <- ggplot(pca_subcont, aes_string(x=first_PC, y=second_PC, color='hgdp_tgp_meta.Population', shape='hgdp_tgp_meta.Population', text='s')) +
+    geom_point(size=2) +
+    theme_classic() +
+    scale_shape_manual(values=myshapes, labels=unique(pca_subcont$hgdp_tgp_meta.Population), name='Population') +
+    scale_color_manual(values=mycolors, labels=unique(pca_subcont$hgdp_tgp_meta.Population), name='Population') +
+    labs(title='global') +
+    theme(text = element_text(size=14, color='black'),
+          legend.title = element_text(size = 12), 
+          legend.text = element_text(size = 9),
+          legend.key.size = unit(0.7, "lines")) +
+    guides(shape = guide_legend(override.aes = list(size = 0.85)))
+  if(bottom) {
+    p_subcont <- p_subcont +
+      theme(axis.text = element_text(color='black'),
+            legend.title = element_text(size = 12), 
+            legend.text = element_text(size = 9),
+            legend.key.size = unit(0.7, "lines"),
+            legend.position="bottom") +
+      guides(fill=guide_legend(ncol=1,byrow=FALSE, title.position="top"),
+             shape=guide_legend(ncol=1,byrow=FALSE, title.position="top"))
+  }
+  return(p_subcont)
+}
+```
+
+# 7c) plot global pcs and save as pdf 
+````{r}
+ref_unrel <- read.table(gzfile('~/Desktop/Broad/alicia/HGDP_TGP/hgdp_tgp/UPDATED_scores_for_pca_postoutlier/global_scores.txt.bgz'), header=T)
+proj_rel <- read.table(gzfile('~/Desktop/Broad/alicia/HGDP_TGP/hgdp_tgp/UPDATED_scores_for_pca_postoutlier/global_projected_scores.txt.bgz'), header=T)
+
+# combine the ref and proj data into one dataset and then join that to the metadata to add additional info for those samples 
+pca_subcont <- bind_rows(ref_unrel, proj_rel) %>%
+  left_join(hgdp_tgp) %>%
+  arrange(hgdp_tgp_meta.Population)
+  
+p_1_2 <- sin_pca_plot(pca_subcont, 'PC1', 'PC2')
+p_1_2_bottom <- sin_pca_plot(pca_subcont, 'PC1', 'PC2', TRUE) 
+p_3_4 <- sin_pca_plot(pca_subcont, 'PC3', 'PC4')
+p_5_6 <- sin_pca_plot(pca_subcont, 'PC5', 'PC6')
+p_7_8 <- sin_pca_plot(pca_subcont, 'PC7', 'PC8')
+p_subcont <- plot_grid(p_1_2 + theme(legend.position="none"), p_3_4 + theme(legend.position="none"), 
+                         p_5_6 + theme(legend.position="none"), p_7_8 + theme(legend.position="none"), nrow=1)
+legend <- get_legend(p_1_2)
+p_subcont_legend <- plot_grid(p_subcont, legend, rel_widths = c(4, 1))
+  
+ggsave(paste0('UPDATED_pca_plots_postoutlier/UPDATED_global_pca_1to8.pdf'), p_subcont_legend, width=15, height=4)
+  
+ggplotly(p_subcont_legend, tooltip='text')
+```
