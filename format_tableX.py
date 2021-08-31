@@ -14,7 +14,6 @@ mt = hl.sample_qc(mt, name = "new_sample_qc")
 # Grabbing only the columns from the matrix table (outputs table of just columns)
 col_table = mt.cols()
 
-col_table.describe()
 
 # writing out a col table with only the columns needed for table x
 col_table = col_table.select(col_table.hgdp_tgp_meta.Study.region,
@@ -44,7 +43,7 @@ related = related.annotate_cols(unrelated = False)
 unrelated_cols = unrelated.cols()
 related_cols = related.cols()
 
-# Annotating teh
+# Annotating the related/unrelated mts with counts per population
 related_cols.aggregate(hl.agg.counter(related_cols.hgdp_tgp_meta.Population))
 unrelated_cols.aggregate(hl.agg.counter(unrelated_cols.hgdp_tgp_meta.Population))
 

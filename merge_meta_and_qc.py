@@ -82,9 +82,12 @@ ht.write('gs://african-seq-data/hgdp_tgp/hgdp_tgp_sample_metadata.ht')
 # reading in table annotated with Alicia and Julia's respective metadata
 ht = hl.read_table('gs://african-seq-data/hgdp_tgp/hgdp_tgp_sample_metadata.ht')
 
+# annotating Konrad's dense mt with Alicia and Julia's metadata
+mt = dense_mt.annotate_cols(**ht[dense_mt.s])
+
 # filtering samples to those who should pass QC
 # this filters to only samples that passed gnomad sample QC hard filters
-mt_filt = mt.filter_cols(~ht.sample_filters.hard_filtered)
+mt_filt = mt.filter_cols(~mt.sample_filters.hard_filtered)
 
 # annotating partially filtered dataset with variant metadata
 mt_filt = mt_filt.annotate_rows(**var_meta[mt_filt.locus, mt_filt.alleles])

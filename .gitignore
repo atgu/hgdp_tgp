@@ -140,3 +140,9 @@ scores_for_pca/
 pca_plots/
 scores_for_pca_outliers_removed/
 pca_plots_outliers_removed/
+UPDATED_scores_for_pca_preoutlier/
+UPDATED_pca_plots_preoutlier/
+UPDATED_scores_for_pca_postoutlier/
+UPDATED_pca_plots_postoutlier/
+pca_plots_pre&post_outlier.pdf
+.DS_Store
