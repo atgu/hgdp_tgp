@@ -8,6 +8,9 @@ hl.init()
 # reading in the post QC version of the merged dataset (with metadata)
 mt = hl.read_matrix_table('gs://african-seq-data/hgdp_tgp/hgdp_tgp_postQC.mt')
 
+# Running sample_qc to get the n_snp and n_singleton counts
+mt = hl.sample_qc(mt, name = "new_sample_qc")
+
 # Grabbing only the columns from the matrix table (outputs table of just columns)
 col_table = mt.cols()
 
