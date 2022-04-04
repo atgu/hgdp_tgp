@@ -36,13 +36,13 @@ write.csv(mary_tsv, file="table_1.csv")
 # Changing geographical data to a factor so that the figure is sorted by geographic region
 #info_downsample$Population <- factor(info_downsample$Population, levels = unique(info_downsample$Population[order(info_downsample$region)]))
 
-# Vector which contains the order for the grographical region for the legend
+# Vector which contains the order for the geographical region for the legend
 region_order <- c("AFR", "AMR", "CSA", "EAS", "EUR", "MID", "OCE")
 
 # Creating a vector with regional colors from metadata
 region_vec <- setNames(unique(metadata$hgdp_tgp_meta.Continent.colors), 
                        unique(metadata$hgdp_tgp_meta.Genetic.region))
-# Creating a vector with color per poplation from metadata
+# Creating a vector with color per population from metadata
 pop_vec <- setNames(unique(metadata$hgdp_tgp_meta.Pop.colors), 
                     unique(metadata$hgdp_tgp_meta.Population))
 
@@ -77,7 +77,9 @@ p <- ggplot(info_sort, aes(x = Population, y=n_snp_stats.mean, fill=Geographical
   labs(x="Population", y="Mean SNPs per Individual")
 
 show(p)
-save_plot('v1_snps_per_indiv.png', p, base_height=7, base_width=20) 
+# saving the plot as both a png and pdf for paper purposes
+save_plot('snps_per_indiv.png', p, base_height=7, base_width=20) 
+save_plot('snps_per_indiv.pdf', p, base_height=7, base_width=20) 
 
 
 # plotting the number of singletons/individual per population
@@ -94,6 +96,7 @@ p1 <- ggplot(info_sort, aes(x = Population, y=n_singleton, fill=region)) +
 show(p1)
 save_plot('singletons_per_indiv.png', p1, base_height=7, base_width=20) 
 
+
 # plotting the mean coverage per individual comparing HGDP and 1kG
 p2 <- ggplot(info, aes(x=cov_stats.mean, group=Project, color=Project, fill=Project)) + 
   geom_density(adjust=1.5, alpha=.3, size=1) + 
@@ -103,22 +106,34 @@ p2 <- ggplot(info, aes(x=cov_stats.mean, group=Project, color=Project, fill=Proj
   labs(x="Mean Coverage per Individual", y="Density")
   
 show(p2)
-save_plot('v1_cov_1kg_hgdp.png', p2, base_height=7, base_width=14) 
+save_plot('cov_1kg_hgdp.png', p2, base_height=7, base_width=14)
+save_plot('cov_1kg_hgdp.pdf', p2, base_height=7, base_width=14) 
 
-# Dropping the OCE population for the coverage plots since there are only two subpopulations for that global population
-info_oce <- info[info$Geographical_region !="OCE",]
+  
+# Creating individual vectors for this plot because it is still inclusing Oceania in the legend
+# Vector which contains the order for the geographical region for the legend
+region_order_oce <- c("AFR", "AMR", "CSA", "EAS", "EUR", "MID")
 
+# Creating a vector with regional colors from metadata
+region_vec_oce <- setNames(unique(metadata$hgdp_tgp_meta.Continent.colors), 
+                       unique(metadata$hgdp_tgp_meta.Genetic.region))
 # plotting the mean coverage per individual comparing geographical regions
-p3 <- ggplot(info_oce, aes(x=cov_stats.mean, group=Geographical_region, 
+# Dropping the OCE population for the coverage plots since there are only two subpopulations for that global population
+p3 <- info %>% subset(info$Geographical_region !="OCE") %>%
+  ggplot( aes(x=cov_stats.mean, group=Geographical_region, 
                        color=Geographical_region, fill=Geographical_region)) + 
   geom_density(adjust=1.5, alpha=.3, size=1) + 
   theme_bw() +
-  scale_color_manual(name="Geographical Region", values = region_vec, breaks = region_order) +
-  scale_fill_manual(name="Geographical Region", values = region_vec, breaks = region_order) +
+  scale_color_manual(name="Geographical Region", values = region_vec_oce, breaks = region_order_oce) +
+  scale_fill_manual(name="Geographical Region", values = region_vec_oce, breaks = region_order_oce) +
   theme(text = element_text(size=20),
         axis.text = element_text(color="black")) +
-  ggtitle("Mean Coverage by Continental Region") + 
+  ggtitle("Mean Coverage by Geographic Region") + 
   labs(x="Mean Coverage per Individual", y="Density")
 
 show(p3)
-save_plot('v1_cov_region.png', p3, base_height=7, base_width=14) 
+save_plot('cov_region.png', p3, base_height=7, base_width=14) 
+save_plot('cov_region.pdf', p3, base_height=7, base_width=14) 
+
+# Calculating the mean coverage across all populations
+mean(info_oce$cov_stats.mean)
