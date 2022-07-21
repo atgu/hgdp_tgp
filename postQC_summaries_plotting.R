@@ -34,7 +34,8 @@ write.csv(mary_tsv, file="table_1.csv")
 
 
 # Changing geographical data to a factor so that the figure is sorted by geographic region
-#info_downsample$Population <- factor(info_downsample$Population, levels = unique(info_downsample$Population[order(info_downsample$region)]))
+#info_downsample$Population <- factor(info_downsample$Population, 
+levels = unique(info_downsample$Population[order(info_downsample$region)])
 
 # Vector which contains the order for the geographical region for the legend
 region_order <- c("AFR", "AMR", "CSA", "EAS", "EUR", "MID", "OCE")
