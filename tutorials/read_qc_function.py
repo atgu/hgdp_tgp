@@ -1,25 +1,6 @@
-import hail as hl
-
-
-# setting requester pays bucket to use throughout tutorial
-GCP_PROJECT_NAME = "diverse-pop-seq-ref"
-hl.init(spark_conf={
-    'spark.hadoop.fs.gs.requester.pays.mode': 'CUSTOM',
-    'spark.hadoop.fs.gs.requester.pays.buckets': 'hgdp_tgp,gcp-public-data--gnomad',
-    'spark.hadoop.fs.gs.requester.pays.project.id': 'diverse-pop-seq-ref'
-})
-
-
-# # Data Reading Function
-# This function serves the purpose of reading in the dataset of different stages throughout
-# the tutorial and given certain flags, will allow the user to specify which filters
-# they would like run on the dataset. This function helps to reduce the amount
-# of times data needs to be written out, overall decreasing the computational
-# and monetary cost of running the tutorials.
-
-
 def read_qc(
         default: bool = False,
+        post_qc:bool = False,
         sample_qc: bool = False,
         variant_qc: bool = False,
         duplicate: bool = False,
@@ -31,6 +12,11 @@ def read_qc(
     By default, returns pre QC MatrixTable with qc filters annotated but not filtered.
 
     :param bool default: if True will preQC version of the dataset
+    :param bool post_qc: if True will return a post QC matrix table that has gone through:
+        - sample QC
+        - variant QC
+        - duplicate removal
+        - outlier removal
     :param bool sample_qc: if True will return a post sample QC matrix table
     :param bool variant_qc: if True will return a post variant QC matrix table
     :param bool duplicate: if True will return a matrix table with duplicate samples removed
@@ -44,7 +30,7 @@ def read_qc(
         - additional variant filtering
     :param bool rel_unrel: default will return same mt as ld pruned above
         if 'related' will return a matrix table with only related samples.
-        if 'unrelated' will return my with only unrelated samples
+        if 'unrelated' will return a matrix table with only unrelated samples
     """
     # Reading in all the tables and matrix tables needed to generate the pre_qc matrix table
     sample_meta = hl.import_table('gs://hgdp-1kg/hgdp_tgp/qc_and_figure_generation/gnomad_meta_v1.tsv')
@@ -116,6 +102,13 @@ def read_qc(
         # returns preQC dataset
         return mt
     
+    if post_qc:
+        print("Returning post sample and variant QC matrix table with duplicates and PCA outliers removed")
+        sample_qc = True
+        variant_qc = True
+        duplicate = True
+        outlier_removal = True
+    
     if sample_qc:
         print("Running sample QC")
         # run data through sample QC
@@ -161,7 +154,7 @@ def read_qc(
         mt = mt.filter_cols(~outliers_list.contains(mt['s']))
 
     if ld_pruning:
-        print("Returning ld pruned post QC matrix table pre PCA outlier removal ")
+        print("Returning ld pruned post variant and sample QC matrix table pre PCA outlier removal ")
         # read in dataset which has additional variant filtering and ld pruning run
         # data has gone through:
         #   - sample QC
@@ -170,7 +163,8 @@ def read_qc(
         mt = hl.read_matrix_table('gs://hgdp-1kg/hgdp_tgp/intermediate_files/filtered_n_pruned_output_updated.mt')
 
     if rel_unrel == "all":
-        print("Returning post QC matrix table pre PCA outlier removal with related & unrelated individuals")
+        print("Returning ld pruned post sample and variant \
+              QC matrix table pre PCA outlier removal with related & unrelated individuals")
         # need to check what steps this dataset has gone through, this is something to discuss with Mary
         # data has gone through:
         #   - sample QC
@@ -180,7 +174,8 @@ def read_qc(
         mt = hl.read_matrix_table('gs://hgdp-1kg/hgdp_tgp/intermediate_files/filtered_n_pruned_output_updated.mt')
 
     elif rel_unrel == 'related':
-        print("Returning post QC matrix table pre PCA outlier removal with only related individuals")
+        print("Returning post sample and variant QC matrix table \
+              pre PCA outlier removal with only related individuals")
         # data has gone through:
         #   - sample QC
         #   - variant QC
@@ -199,6 +194,10 @@ def read_qc(
         #   - LD pruning
         #   - pc_relate - filter to only unrelated individuals
         mt = hl.read_matrix_table('gs://hgdp-1kg/hgdp_tgp/unrel_updated.mt')
-
-
+        
+    # Calculating both variant and sample_qc metrics on the mt before returning
+    # so the stats are up to date with the version being written out
+    mt = hl.sample_qc(mt)
+    mt = hl.variant_qc(mt)
+    
     return mt
