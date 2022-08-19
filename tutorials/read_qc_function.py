@@ -24,13 +24,13 @@ def read_qc(
     :param bool ld_pruning: if True will return a matrix table that has gone through:
         - sample QC
         - variant QC
-        - PCA outlier removal
         - duplicate removal
         - LD pruning
         - additional variant filtering
     :param bool rel_unrel: default will return same mt as ld pruned above
-        if 'related' will return a matrix table with only related samples.
-        if 'unrelated' will return a matrix table with only unrelated samples
+        if 'related_pre_outlier' will return a matrix table with only related samples.
+        if 'unrelated_pre_outlier' will return a matrix table with only unrelated samples
+        if 
     """
     # Reading in all the tables and matrix tables needed to generate the pre_qc matrix table
     sample_meta = hl.import_table('gs://hgdp-1kg/hgdp_tgp/qc_and_figure_generation/gnomad_meta_v1.tsv')
@@ -173,7 +173,7 @@ def read_qc(
         #   - LD pruning
         mt = hl.read_matrix_table('gs://hgdp-1kg/hgdp_tgp/intermediate_files/filtered_n_pruned_output_updated.mt')
 
-    elif rel_unrel == 'related':
+    elif rel_unrel == 'related_pre_outlier':
         print("Returning post sample and variant QC matrix table \
               pre PCA outlier removal with only related individuals")
         # data has gone through:
@@ -185,7 +185,7 @@ def read_qc(
         mt = hl.read_matrix_table('gs://hgdp-1kg/hgdp_tgp/rel_updated.mt')
 
         
-    elif rel_unrel == 'unrelated':
+    elif rel_unrel == 'unrelated_pre_outlier':
         print("Returning post QC matrix table with only unrelated individuals")
         # data has gone through:
         #   - sample QC
@@ -194,6 +194,32 @@ def read_qc(
         #   - LD pruning
         #   - pc_relate - filter to only unrelated individuals
         mt = hl.read_matrix_table('gs://hgdp-1kg/hgdp_tgp/unrel_updated.mt')
+
+
+    elif rel_unrel == 'related_post_outlier':
+        print("Returning post sample and variant QC matrix table \
+              pre PCA outlier removal with only related individuals")
+        # data has gone through:
+        #   - sample QC
+        #   - variant QC
+        #   - duplicate removal
+        #   - LD pruning
+        #   - pc_relate - filter to only related individuals
+        #   - PCA outlier removal
+        mt = hl.read_matrix_table('gs://hgdp-1kg/hgdp_tgp/datasets_for_others/lindo/ds_without_outliers/related.mt')
+
+
+    elif rel_unrel == 'unrelated_pst_outlier':
+        print("Returning post sample and variant QC matrix table \
+              pre PCA outlier removal with only related individuals")
+        # data has gone through:
+        #   - sample QC
+        #   - variant QC
+        #   - duplicate removal
+        #   - LD pruning
+        #   - pc_relate - filter to only unrelated individuals
+        #   - PCA outlier removal
+        mt = hl.read_matrix_table('gs://hgdp-1kg/hgdp_tgp/datasets_for_others/lindo/ds_without_outliers/unrelated.mt')
         
     # Calculating both variant and sample_qc metrics on the mt before returning
     # so the stats are up to date with the version being written out
