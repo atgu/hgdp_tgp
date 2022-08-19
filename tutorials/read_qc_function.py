@@ -28,9 +28,11 @@ def read_qc(
         - LD pruning
         - additional variant filtering
     :param bool rel_unrel: default will return same mt as ld pruned above
-        if 'related_pre_outlier' will return a matrix table with only related samples.
-        if 'unrelated_pre_outlier' will return a matrix table with only unrelated samples
-        if 
+        if 'all' will return the same matrix table as if ld_pruning is True
+        if 'related_pre_outlier' will return a matrix table with only related samples pre pca outlier removal
+        if 'unrelated_pre_outlier' will return a matrix table with only unrelated samples pre pca outlier removal
+        if 'related_post_outlier' will return a matrix table with only related samples post pca outlier removal
+        if 'unrelated_post_outlier' wil return a matrix table with only unrelated samples post pca outlier removal
     """
     # Reading in all the tables and matrix tables needed to generate the pre_qc matrix table
     sample_meta = hl.import_table('gs://hgdp-1kg/hgdp_tgp/qc_and_figure_generation/gnomad_meta_v1.tsv')
@@ -162,7 +164,7 @@ def read_qc(
         #   - duplicate removal
         mt = hl.read_matrix_table('gs://hgdp-1kg/hgdp_tgp/intermediate_files/filtered_n_pruned_output_updated.mt')
 
-    if rel_unrel == "all":
+    if rel_unrel == "default":
         print("Returning ld pruned post sample and variant \
               QC matrix table pre PCA outlier removal with related & unrelated individuals")
         # need to check what steps this dataset has gone through, this is something to discuss with Mary
