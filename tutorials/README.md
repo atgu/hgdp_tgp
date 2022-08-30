@@ -16,6 +16,8 @@ To run the tutorials, the user will need to start up a google cloud cluster on t
 - To run the tutorials with the gnomAD components you will need to add the following arguments to your `hailctl dataproc` command:
     - `--packages gnomad`
     - `--requester-pays-allow-all`
+- ***If you plan on running nb5*** we advise to start your cluster with the following commmand:
+    >`hailctl dataproc start qc-notebook4 --project [YOUR_PROJECT_NAME] --num-secondary-workers 50 --region=us-central1 --zone=us-central1-b --packages git+https://github.com/broadinstitute/gnomad_methods.git --master-machine-type n1-highmem-8 --worker-machine-type n1-highmem-8 --big-executors`
 
 ## Links to view notebooks
 To view the tutorials rendered so that jupyter notebook links function properly click on the links below for each notebook:

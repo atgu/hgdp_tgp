@@ -37,12 +37,9 @@ def read_qc(
     # Reading in all the tables and matrix tables needed to generate the pre_qc matrix table
     sample_meta = hl.import_table('gs://hgdp-1kg/hgdp_tgp/qc_and_figure_generation/gnomad_meta_v1.tsv')
     sample_qc_meta = hl.read_table('gs://hgdp_tgp/output/gnomad_v3.1_sample_qc_metadata_hgdp_tgp_subset.ht')
-    var_meta = hl.read_table(
-        'gs://hgdp-1kg/hgdp_tgp/qc_and_figure_generation/gnomad_v3_sites_filters_only.ht')
     dense_mt = hl.read_matrix_table(
         'gs://gcp-public-data--gnomad/release/3.1.2/mt/genomes/gnomad.genomes.v3.1.2.hgdp_1kg_subset_dense.mt')
     
-    var_meta = var_meta.naive_coalesce(5000)
     dense_mt = dense_mt.naive_coalesce(5000)
 
 
@@ -94,10 +91,8 @@ def read_qc(
     # Using hl.annotate_cols() method to annotate the gnomAD variant QC metadata onto the matrix table
     mt = dense_mt.annotate_cols(**ht[dense_mt.s])
 
-    # annotating preQC dataset with variant metadata
-    mt = mt.annotate_rows(**var_meta[mt.locus, mt.alleles])
-
-    print(f"sample_qc: {sample_qc}\nvariant_qc: {variant_qc}\nduplicate: {duplicate}\noutlier_removal: { outlier_removal}\nld_pruning: {ld_pruning}\nrel_unrel: {rel_unrel}")
+    print(f"sample_qc: {sample_qc}\nvariant_qc: {variant_qc}\nduplicate: {duplicate}" \
+          f"\noutlier_removal: { outlier_removal}\nld_pruning: {ld_pruning}\nrel_unrel: {rel_unrel}")
     
     if default:
         print("Returning default preQC matrix table")
@@ -117,9 +112,6 @@ def read_qc(
         # filtering samples to those who should pass gnomADs sample QC
         # this filters to only samples that passed gnomad sample QC hard filters
         mt = mt.filter_cols(~mt.sample_filters.hard_filtered)
-
-        # annotating partially filtered dataset with variant metadata
-        mt = mt.annotate_rows(**var_meta[mt.locus, mt.alleles])
 
     if variant_qc:
         print("Running variant QC")
@@ -165,19 +157,13 @@ def read_qc(
         mt = hl.read_matrix_table('gs://hgdp-1kg/hgdp_tgp/intermediate_files/filtered_n_pruned_output_updated.mt')
 
     if rel_unrel == "default":
-        print("Returning ld pruned post sample and variant \
-              QC matrix table pre PCA outlier removal with related & unrelated individuals")
-        # need to check what steps this dataset has gone through, this is something to discuss with Mary
-        # data has gone through:
-        #   - sample QC
-        #   - variant QC
-        #   - duplicate removal
-        #   - LD pruning
-        mt = hl.read_matrix_table('gs://hgdp-1kg/hgdp_tgp/intermediate_files/filtered_n_pruned_output_updated.mt')
+        # do nothing
+        # created a default value because there are multiple options for rel/unrel datasets
+        mt = mt
 
     elif rel_unrel == 'related_pre_outlier':
-        print("Returning post sample and variant QC matrix table \
-              pre PCA outlier removal with only related individuals")
+        print("Returning post sample and variant QC matrix table " \
+              "pre PCA outlier removal with only related individuals")
         # data has gone through:
         #   - sample QC
         #   - variant QC
@@ -199,8 +185,8 @@ def read_qc(
 
 
     elif rel_unrel == 'related_post_outlier':
-        print("Returning post sample and variant QC matrix table \
-              pre PCA outlier removal with only related individuals")
+        print("Returning post sample and variant QC matrix table " \
+              "pre PCA outlier removal with only related individuals")
         # data has gone through:
         #   - sample QC
         #   - variant QC
@@ -212,8 +198,8 @@ def read_qc(
 
 
     elif rel_unrel == 'unrelated_pst_outlier':
-        print("Returning post sample and variant QC matrix table \
-              pre PCA outlier removal with only related individuals")
+        print("Returning post sample and variant QC matrix table " \
+              "pre PCA outlier removal with only related individuals")
         # data has gone through:
         #   - sample QC
         #   - variant QC
