@@ -21,8 +21,8 @@ To run the tutorials, the user will need to start up a google cloud cluster on t
 
 ## Links to view notebooks
 To view the tutorials rendered so that jupyter notebook links function properly click on the links below for each notebook:
-<br>[Notebook 1](https://nbviewer.org/github/atgu/hgdp_tgp/blob/tutorial_reformat/tutorials/nb1.ipynb)
-<br>[Notebook 2](https://nbviewer.org/github/atgu/hgdp_tgp/blob/tutorial_reformat/tutorials/nb2.ipynb)
-<br>[Notebook 3](https://nbviewer.org/github/atgu/hgdp_tgp/blob/tutorial_reformat/tutorials/nb3.ipynb)
-<br>[Notebook 4](https://nbviewer.org/github/atgu/hgdp_tgp/blob/tutorial_reformat/tutorials/nb4.ipynb)
-<br>[Notebook 5](https://nbviewer.org/github/atgu/hgdp_tgp/blob/tutorial_reformat/tutorials/nb5.ipynb)
+<br>[Notebook 1](https://nbviewer.org/github/atgu/hgdp_tgp/blob/master/tutorials/nb1.ipynb)
+<br>[Notebook 2](https://nbviewer.org/github/atgu/hgdp_tgp/blob/master/tutorials/nb2.ipynb)
+<br>[Notebook 3](https://nbviewer.org/github/atgu/hgdp_tgp/blob/master/tutorials/nb3.ipynb)
+<br>[Notebook 4](https://nbviewer.org/github/atgu/hgdp_tgp/blob/master/tutorials/nb4.ipynb)
+<br>[Notebook 5](https://nbviewer.org/github/atgu/hgdp_tgp/blob/master/tutorials/nb5.ipynb)
