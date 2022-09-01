@@ -79,7 +79,7 @@ def read_qc(
     sample_meta = sample_meta.select(**dict_to_struct(d))
     sample_meta = sample_meta.key_by('s')
 
-    # grabbing the columns needed from Alicia's metadata
+    # grabbing the columns needed from HGDP metadata
     new_meta = sample_meta.select(sample_meta.hgdp_tgp_meta, sample_meta.bergstrom)
 
     # creating a table with gnomAD sample metadata and HGDP metadata
