@@ -6,6 +6,9 @@ The tutorials have the following software requirements if you would like to run 
 - [Python 3.7 or later](https://www.python.org/downloads/)
 - [Plotly](https://plotly.com/python/getting-started/)
 - [Pandas](https://pandas.pydata.org/getting_started.html)
+- [Pickle](https://docs.python.org/3/library/pickle.html#module-pickle)
+- [scikit-learn Ensemble](https://scikit-learn.org/stable/modules/ensemble.html)
+- [Typing](https://docs.python.org/3/library/typing.html)
 
 To run the tutorials, the user will need to start up a google cloud cluster on their own google cloud project. More information on creating google cloud projects can be found [here](https://cloud.google.com/resource-manager/docs/creating-managing-projects).
 

@@ -1,3 +1,5 @@
+import hail as hl
+
 def read_qc(
         default: bool = False,
         post_qc:bool = False,
