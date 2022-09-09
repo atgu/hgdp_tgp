@@ -219,7 +219,7 @@ def read_qc(
         else:
             mt = hl.read_matrix_table('gs://hgdp-1kg/hgdp_tgp/datasets_for_others/lindo/ds_without_outliers/related.mt')
 
-    elif rel_unrel == 'unrelated_pst_outlier':
+    elif rel_unrel == 'unrelated_post_outlier':
         print("Returning post sample and variant QC matrix table " \
               "pre PCA outlier removal with only related individuals")
         # data has gone through:
