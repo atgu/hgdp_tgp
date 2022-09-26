@@ -1,20 +1,19 @@
 import hail as hl
 
 def read_qc(
-        default: bool = False,
+        raw: bool = False,
         post_qc:bool = False,
         sample_qc: bool = False,
         variant_qc: bool = False,
-        duplicate: bool = False,
         outlier_removal: bool = False,
         ld_pruning: bool = False,
         rel_unrel: str = 'default',
         n_partitions: int = 0) -> hl.MatrixTable:
     """
     Wrapper function to get HGDP+1kGP data as Matrix Table at different stages of QC/filtering.
-    By default, returns pre QC MatrixTable with qc filters annotated but not filtered.
+    By raw, returns pre QC MatrixTable with qc filters annotated but not filtered.
 
-    :param bool default: if True will preQC version of the dataset
+    :param bool raw: if True will return a preQC version of the dataset
     :param bool post_qc: if True will return a post QC matrix table that has gone through:
         - sample QC
         - variant QC
@@ -22,8 +21,7 @@ def read_qc(
         - outlier removal
     :param bool sample_qc: if True will return a post sample QC matrix table
     :param bool variant_qc: if True will return a post variant QC matrix table
-    :param bool duplicate: if True will return a matrix table with duplicate samples removed
-    :param bool outlier_removal: if True will return a matrix table with PCA outliers and duplicate samples removed
+    :param bool outlier_removal: if True will return a matrix table with PCA outliers removed
     :param bool ld_pruning: if True will return a matrix table that has gone through:
         - sample QC
         - variant QC
@@ -96,11 +94,8 @@ def read_qc(
 
     # Using hl.annotate_cols() method to annotate the gnomAD variant QC metadata onto the matrix table
     mt = dense_mt.annotate_cols(**ht[dense_mt.s])
-
-    print(f"sample_qc: {sample_qc}\nvariant_qc: {variant_qc}\nduplicate: {duplicate}" \
-          f"\noutlier_removal: { outlier_removal}\nld_pruning: {ld_pruning}\nrel_unrel: {rel_unrel}")
     
-    if default:
+    if raw:
         print("Returning default preQC matrix table")
         # returns preQC dataset
         return mt
@@ -113,31 +108,24 @@ def read_qc(
         outlier_removal = True
     
     if sample_qc:
-        print("Running sample QC")
-        # run data through sample QC
+        print("Applying sample QC")
+        # Apply sample QC filters to dataset
         # filtering samples to those who should pass gnomADs sample QC
         # this filters to only samples that passed gnomad sample QC hard filters
         mt = mt.filter_cols(~mt.sample_filters.hard_filtered)
 
     if variant_qc:
-        print("Running variant QC")
-        # run data through variant QC
+        print("Applying variant QC")
+        # Apply variant QC filters to dataset
         # Subsetting the variants in the dataset to only PASS variants (those which passed gnomAD's variant QC)
         # PASS variants are variants which have an entry in the filters field.
         # This field contains an array which contains a bool if any variant qc filter was failed
         # This is the last step in the QC process
         mt = mt.filter_rows(hl.len(mt.filters) != 0, keep=False)
 
-    if duplicate:
-        print("Removing any duplicate samples")
-        # Removing any duplicates in the dataset using hl.distinct_by_col() which removes
-        # columns with a duplicate column key. It keeps one column for each unique key.
-        # after updating to the new dense_mt, this step is no longer necessary to run
-        mt = mt.distinct_by_col()
-
     if outlier_removal:
         print("Removing PCA outliers")
-        # remove PCA outliers and duplicates
+        # remove PCA outliers
         # reading in the PCA outlier list
         # To read in the PCA outlier list, first need to read the file in as a list
         # using hl.hadoop_open here which allows one to read in files into hail from Google cloud storage
@@ -159,7 +147,6 @@ def read_qc(
         # data has gone through:
         #   - sample QC
         #   - variant QC
-        #   - duplicate removal
         if n_partitions != 0:
             mt = hl.read_matrix_table('gs://hgdp-1kg/hgdp_tgp/intermediate_files/filtered_n_pruned_output_updated.mt',
             _n_partitions = n_partitions)
@@ -188,7 +175,8 @@ def read_qc(
             mt = hl.read_matrix_table('gs://hgdp-1kg/hgdp_tgp/rel_updated.mt')
         
     elif rel_unrel == 'unrelated_pre_outlier':
-        print("Returning post QC matrix table with only unrelated individuals")
+        print("Returning post sample and variant QC matrix table " \
+              "pre PCA outlier removal with only unrelated individuals")
         # data has gone through:
         #   - sample QC
         #   - variant QC
@@ -204,7 +192,7 @@ def read_qc(
 
     elif rel_unrel == 'related_post_outlier':
         print("Returning post sample and variant QC matrix table " \
-              "pre PCA outlier removal with only related individuals")
+              "post PCA outlier removal with only related individuals")
         # data has gone through:
         #   - sample QC
         #   - variant QC
@@ -221,7 +209,7 @@ def read_qc(
 
     elif rel_unrel == 'unrelated_post_outlier':
         print("Returning post sample and variant QC matrix table " \
-              "pre PCA outlier removal with only related individuals")
+              "post PCA outlier removal with only unrelated individuals")
         # data has gone through:
         #   - sample QC
         #   - variant QC
