@@ -18,11 +18,11 @@ To run the tutorials, the user will need to start up a google cloud cluster on t
 
 ### How to start a google cloud cluster:
 - The tutorials use hail, so we recommend starting clusters using `hailctl`. 
-    - More information on hail on the cloud can be found [here](https://hail.is/docs/0.2/hail_on_the_cloud.html).
+    - More information on using hail on the cloud can be found [here](https://hail.is/docs/0.2/hail_on_the_cloud.html).
     -  More information on `hailctl` can be found [here](https://hail.is/docs/0.2/cloud/google_cloud.html#hailctl-dataproc). 
 - To run the tutorials with the gnomAD components you will need to add the following arguments to your `hailctl dataproc` command:
     - `--packages gnomad` OR `--packages "git+https://github.com/broadinstitute/gnomad_methods.git@main"`
-- ***If you plan on running nb5*** we advise to start your cluster with the following commmand:
+- **If you plan to run Notebook 5**, we suggest you start your cluster with the following commmand:
     >`hailctl dataproc start qc-notebook5 --project [YOUR_PROJECT_NAME] --num-secondary-workers 50 --region=us-central1 --zone=us-central1-b --packages git+https://github.com/broadinstitute/gnomad_methods.git --master-machine-type n1-highmem-8 --worker-machine-type n1-highmem-8 --big-executors`
 
 ## Links to view notebooks
