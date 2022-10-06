@@ -1,22 +1,22 @@
 ## Overview
 
-The HGDP (Human Genome Diversity Project) and 1kGP (1000 Genomes Project) are the two largest public genetic datasets with individual level data. In this project, we have joint called these datasets integrated with gnomAD and provide a harmonized resource ready for downstream analysis or integration with custom datasets. We provide a set of notebooks for quality control and analysis of this dataset as educational resources.
+The HGDP (Human Genome Diversity Project) and 1kGP (1000 Genomes Project) are the two largest public genetic datasets with individual level data. In this project, we have joint called these datasets integrated with gnomAD and provide a harmonized resource ready for downstream analysis or integration with custom datasets. We provide a set of tutorials of our analyses implemented primarily in Hail as educational resources.
 
 ## Software Requirements
 
-The tutorials have the following software requirements if you would like to run them as written using google cloud:
+The tutorials have the following software requirements if you would like to run them as written using Google Cloud:
 - [Hail](https://hail.is/#install)
 - [Google Cloud sdk](https://cloud.google.com/sdk/docs/install)
 - [Python 3.7 or later](https://www.python.org/downloads/)
 - [Plotly](https://plotly.com/python/getting-started/)
 - [Pandas](https://pandas.pydata.org/getting_started.html)
 - [Pickle](https://docs.python.org/3/library/pickle.html#module-pickle)
-- [scikit-learn Ensemble](https://scikit-learn.org/stable/modules/ensemble.html)
+- [Scikit-learn Ensemble](https://scikit-learn.org/stable/modules/ensemble.html)
 - [Typing](https://docs.python.org/3/library/typing.html)
 
-To run the tutorials, the user will need to start up a google cloud cluster on their own google cloud project. More information on creating google cloud projects can be found [here](https://cloud.google.com/resource-manager/docs/creating-managing-projects).
+To run the tutorials, the user will need to start up a Google Cloud cluster on their own Google Cloud project. More information on creating Google Cloud projects can be found [here](https://cloud.google.com/resource-manager/docs/creating-managing-projects).
 
-### How to start a google cloud cluster:
+### How to start a Google Cloud cluster:
 - The tutorials use hail, so we recommend starting clusters using `hailctl`. 
     - More information on using hail on the cloud can be found [here](https://hail.is/docs/0.2/hail_on_the_cloud.html).
     -  More information on `hailctl` can be found [here](https://hail.is/docs/0.2/cloud/google_cloud.html#hailctl-dataproc). 
