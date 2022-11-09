@@ -1,0 +1,144 @@
+---
+title: "Plotting PCA Plots - with and without outliers"
+author: "Mary T. Yohannes"
+date: "11/8/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# import needed libraries 
+library(tidyverse)
+library(RColorBrewer)
+library(plotly)
+library(cowplot)
+library(gridExtra)
+```
+
+## This markdown is divided into two sections: PCA plots used to detect outlier samples (with outliers) and plots generated after the outliers were removed (without outliers). Global and subcontinental plots with PCs 1 through 8 were generated and written out for both sections. We first set up the plotting functions: 
+
+# 1) Functions 
+### 1a) function to generate a single PCA plot 
+```{r}
+# function to plot a single [simple] PCA plot
+single_pca_plot <- function(region = c('GLOBAL', 'AFR', 'EUR', 'AMR', 'EAS', 'CSA', 'OCE', 'MID'),
+                            pc_scores, 
+                            which_pc1, 
+                            which_pc2, 
+                            bottom=F){
+  
+  pc_scores <- na.omit(pc_scores) # remove possible NA values - # CHMI_CHMI3_WGS2 has no info in metadata
+  
+  # plot specifics 
+  pca_plot <- ggplot(aes=(text='s')) +
+    geom_point(size=2) +
+    theme_classic() +
+    labs(shape="Projects") +
+    theme(text = element_text(size=14, color='black'),
+          legend.title = element_text(size = 12),
+          legend.text = element_text(size = 9),
+          legend.key.size = unit(0.7, "lines")) +
+    guides(shape = guide_legend(override.aes = list(size = 0.85)))
+  
+  if(bottom) {
+    pca_plot <- pca_plot +
+      theme(axis.text = element_text(color='black'),
+            legend.title = element_text(size = 12),
+            legend.text = element_text(size = 9),
+            legend.key.size = unit(0.7, "lines"),
+            legend.position="bottom") +
+      guides(fill=guide_legend(ncol=1,byrow=FALSE, title.position="top"),
+             shape=guide_legend(ncol=1,byrow=FALSE, title.position="top"))
+  }
+  
+  # GLOBAL PCA
+  if (region == 'GLOBAL'){
+    
+    # obtain region colors from the metadata for consistency across all plots
+    region_color <- unique(pc_scores[c("hgdp_tgp_meta.Genetic.region", "hgdp_tgp_meta.Continent.colors")]) %>% pull(hgdp_tgp_meta.Continent.colors, hgdp_tgp_meta.Genetic.region)
+
+    # add information to plot
+    pca_plot <- pca_plot +
+      geom_point(pc_scores, mapping = aes_string(x=which_pc1, y=which_pc2, color='hgdp_tgp_meta.Genetic.region', shape='project_meta.title')) + 
+      scale_color_manual(values=region_color, labels=unique(pc_scores$hgdp_tgp_meta.Genetic.region), name='Regions') 
+    
+    # SUBCONTINENTAL PCA
+    } else if (region %in% c('AFR', 'EUR', 'AMR', 'EAS', 'CSA', 'OCE', 'MID')) {
+      
+      # assign colors to populations within each region  
+      pop_count <- length(unique(pc_scores$hgdp_tgp_meta.Population))
+      pop_color <- colorRampPalette(brewer.pal(7, "Set1"))(pop_count)
+      
+      # add information to plot
+      pca_plot <- pca_plot +
+        geom_point(pc_scores, mapping = aes_string(x=which_pc1, y=which_pc2, color='hgdp_tgp_meta.Population', shape='project_meta.title')) + 
+        scale_color_manual(values=pop_color, labels=unique(pc_scores$hgdp_tgp_meta.Population), name='Populations') 
+        
+      # in case user doesn't specify 'region' argument when running the function  
+      } else{
+        print("Wrong entry for the 'region' argument. Please choose from the following options: 'GLOBAL', 'AFR', 'EUR', 'AMR', 'EAS', 'CSA', 'OCE', or 'MID'")
+        }
+  return(pca_plot)
+  }
+```
+
+
+### 1b) function to generate plots PC1 through PC8, organize them in a grid and save as a pdf  
+```{r}
+pca_plots_in_grid <- function(region, outlier_status){
+  
+  # make sure the string entries are in the right format
+  region <- toupper(region)
+  outlier_status <- tolower(outlier_status)
+  
+  # read-in pc scores to plot 
+  region_pc_scores <- read.table(gzfile(paste0('pca/', outlier_status, '/scores/', region, '_scores_', outlier_status, '.txt.bgz')), header=T)
+  
+  # read-in gnomAD metadata and select desired columns 
+  hgdp_tgp_metadata <- read.delim('~/Desktop/Broad/alicia/pca_subcont/gnomad_meta_v1.tsv', header=T, sep='\t') %>% select(s, project_meta.title, starts_with('hgdp_tgp_meta')) 
+  
+  # some sample IDs have 'v3.1::' prefix as done in gnomAD so stripping that in order to match correctly with the pc score files 
+  hgdp_tgp_metadata$s <- gsub('v3.1::', '', hgdp_tgp_metadata$s)
+  
+  # join scores and metadata to add additional sample info
+  pc_scores_meta <- region_pc_scores %>% left_join(hgdp_tgp_metadata) %>% arrange(hgdp_tgp_meta.Population)
+  
+  # plot 
+  pca_1_2 <- single_pca_plot(region, pc_scores_meta, 'PC1', 'PC2')
+  pca_1_2_bottom <- single_pca_plot(region, pc_scores_meta, 'PC1', 'PC2', TRUE) 
+  pca_3_4 <- single_pca_plot(region, pc_scores_meta, 'PC3', 'PC4')
+  pca_5_6 <- single_pca_plot(region, pc_scores_meta, 'PC5', 'PC6')
+  pca_7_8 <- single_pca_plot(region, pc_scores_meta, 'PC7', 'PC8')
+  all_pca <- plot_grid(pca_1_2 + theme(legend.position="none"), pca_3_4 + theme(legend.position="none"), pca_5_6 + theme(legend.position="none"), pca_7_8 + theme(legend.position="none"), nrow=1) # put all 4 plots together 
+  legend <- get_legend(pca_1_2)
+  all_pca_add_legend <- plot_grid(all_pca, legend, rel_widths = c(4.8, 1)) # add legend
+  all_pca_add_title <- arrangeGrob(all_pca_add_legend, top=textGrob(region, x = 0, hjust = 0)) # add title 
+  
+  # save plots in grid as pdf 
+  ggsave(paste0('pca/', outlier_status, '/plots/', region, '_pca_1to8_', outlier_status, '.pdf'), all_pca_add_title, width=15, height=4)
+  
+  return(list(all_pca_add_title, pca_1_2_bottom))
+}
+```
+
+
+# 2) Plot PCA
+### 2a) With Outliers  
+```{r}
+# GLOBAL PCA 
+GLOBAL_pca <- pca_plots_in_grid('global', 'with_outliers')
+
+# Subcontinental PCA
+regions <- c('AFR', 'EUR', 'AMR', 'EAS', 'CSA', 'OCE', 'MID')
+for (i in 1:length(regions)){
+  assign(paste0(regions[i], '_pca'), pca_plots_in_grid(regions[i], 'with_outliers'))
+}
+
+# Combine all plots together 
+ALL_pca <- plot_grid(GLOBAL_pca[[1]], AFR_pca[[1]], AMR_pca[[1]], CSA_pca[[1]], EAS_pca[[1]], EUR_pca[[1]], MID_pca[[1]], OCE_pca[[1]], ncol=1, align='v')
+
+# Save as pdf and png
+ggsave('pca/with_outliers/plots/ALL_pca_1to8_with_outliers.pdf', ALL_pca, width=15, height=28)
+ggsave('pca/with_outliers/plots/ALL_pca_1to8_with_outliers.png', ALL_pca, width=15, height=28)
+```

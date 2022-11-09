@@ -135,7 +135,7 @@ dmypy.json
 .pyre/
 
 
-# subcontinent pca related files 
+# pca plot -related files filesrelated files 
 scores_for_pca/
 pca_plots/
 scores_for_pca_outliers_removed/
@@ -145,4 +145,6 @@ UPDATED_pca_plots_preoutlier/
 UPDATED_scores_for_pca_postoutlier/
 UPDATED_pca_plots_postoutlier/
 pca_plots_pre&post_outlier.pdf
+pca/
+gnomad_meta_v1.tsv
 .DS_Store
