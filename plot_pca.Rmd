@@ -13,6 +13,7 @@ library(tidyverse)
 library(RColorBrewer)
 library(plotly)
 library(cowplot)
+library(grid)
 library(gridExtra)
 ```
 
@@ -28,7 +29,7 @@ single_pca_plot <- function(region = c('GLOBAL', 'AFR', 'EUR', 'AMR', 'EAS', 'CS
                             which_pc2, 
                             bottom=F){
   
-  pc_scores <- na.omit(pc_scores) # remove possible NA values - # CHMI_CHMI3_WGS2 has no info in metadata
+  pc_scores <- na.omit(pc_scores) # remove possible NA values - # CHMI_CHMI3_WGS2 has no info in metadata so treated as an outlier
   
   # plot specifics 
   pca_plot <- ggplot(aes=(text='s')) +
@@ -142,3 +143,23 @@ ALL_pca <- plot_grid(GLOBAL_pca[[1]], AFR_pca[[1]], AMR_pca[[1]], CSA_pca[[1]], 
 ggsave('pca/with_outliers/plots/ALL_pca_1to8_with_outliers.pdf', ALL_pca, width=15, height=28)
 ggsave('pca/with_outliers/plots/ALL_pca_1to8_with_outliers.png', ALL_pca, width=15, height=28)
 ```
+
+### 2b) Without Outliers  
+```{r}
+# GLOBAL PCA 
+GLOBAL_pca <- pca_plots_in_grid('global', 'without_outliers')
+
+# Subcontinental PCA
+regions <- c('AFR', 'EUR', 'AMR', 'EAS', 'CSA', 'OCE', 'MID')
+for (i in 1:length(regions)){
+  assign(paste0(regions[i], '_pca'), pca_plots_in_grid(regions[i], 'without_outliers'))
+}
+
+# Combine all plots together 
+ALL_pca <- plot_grid(GLOBAL_pca[[1]], AFR_pca[[1]], AMR_pca[[1]], CSA_pca[[1]], EAS_pca[[1]], EUR_pca[[1]], MID_pca[[1]], OCE_pca[[1]], ncol=1, align='v')
+
+# Save as pdf and png
+ggsave('pca/without_outliers/plots/ALL_pca_1to8_without_outliers.pdf', ALL_pca, width=15, height=28)
+ggsave('pca/without_outliers/plots/ALL_pca_1to8_without_outliers.png', ALL_pca, width=15, height=28)
+```
+

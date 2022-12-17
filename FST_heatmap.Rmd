@@ -1,0 +1,185 @@
+---
+title: "Plotting F_ST heatmap"
+author: "Mary T. Yohannes"
+date: "11/21/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(pheatmap)
+library(dplyr)
+library(RColorBrewer)
+library(geosphere)
+library(ggplot2)
+```
+
+## This markdown shows how to make a population-level F_ST heatmap and a scatter plot of F_ST vs geographical distance 
+
+### 1) Set up matrix for heatmap
+```{r}
+# read-in file with fst values 
+ds <- read.table('~/Desktop/Broad/alicia/HGDP_TGP/fst_and_f2/mean_fst.txt')
+
+# get population labels - 78 populations 
+vars <- unique(c(ds$V1, ds$V2)) 
+
+# create all possible pairs including reverse pairs and pairs between same population labels 
+# 3003 (original pairs) + 3003 (pairs reversed) + 78 (pairs between the same popn) = 6084 pairs in total
+cor.ds <- expand.grid(vars, vars) 
+
+# add the fst value for each pair
+# for pairs between same populations, set fst value to 0
+cor.ds <- rbind(merge(cor.ds, ds, by.x=c('Var1', 'Var2'), by.y=c('V1', 'V2')), 
+                merge(cor.ds, ds, by.x=c('Var2', 'Var1'), by.y=c('V1', 'V2')),
+                data.frame(Var1=vars, Var2=vars, V3=0))
+
+# convert table to a correlation data frame (same population pairs on the diagonal)
+cor.mat <- reshape2::dcast(cor.ds, Var1~Var2, value.var='V3')
+
+# set first column values (population names) as row names 
+rownames(cor.mat) <- cor.mat[,1]
+
+# remove the first column and convert the correlation data frame into a matrix 
+cor.mat <- as.matrix(cor.mat[-1])
+```
+
+### 2) Set up annotation data frame and colors for heatmap - region for row
+```{r}
+# read-in metadata from gnomAD and select only the desired columns 
+hgdp_tgp_unfil <- read.delim('~/Desktop/Broad/alicia/HGDP_TGP/hgdp_tgp/gnomad_meta_v1.tsv', header=T, sep='\t') %>% select(s, project_meta.title, starts_with('hgdp_tgp_meta')) 
+
+# some sample IDs have 'v3.1::' prefix as done in gnomAD so stripping that in order to match correctly with the pc score files 
+hgdp_tgp_unfil$s <- gsub('v3.1::', '', hgdp_tgp_unfil$s)
+
+# set up df for annotation 
+# since FST is population level, the annotation file doesn't need to be subsetted 
+hgdp_tgp <- unique(hgdp_tgp_unfil[c("hgdp_tgp_meta.Population", "hgdp_tgp_meta.Genetic.region")]) # select only population and region columns 
+rownames(hgdp_tgp) <- hgdp_tgp[,1] # set populations as rownames 
+hgdp_tgp <- hgdp_tgp[-1] # remove the population column 
+colnames(hgdp_tgp) <- c("Region") # rename column 
+
+### set color for heat map annotation - obtain from metadata itself for consistency across all plots
+# region 
+reg_colr_df <- unique(hgdp_tgp_unfil[c("hgdp_tgp_meta.Genetic.region", "hgdp_tgp_meta.Continent.colors")])
+reg_colr <- reg_colr_df %>% pull(hgdp_tgp_meta.Continent.colors, hgdp_tgp_meta.Genetic.region)
+annot_reg_colr <- list(Region = reg_colr) # convert into a list  
+```
+
+## 3) Generate heatmap
+```{r}
+# show plot 
+pheatmap(cor.mat, annotation_col = hgdp_tgp, annotation_colors = annot_reg_colr, fontsize_row = 5, fontsize_col= 5, angle_col = 90, border_color=NA, height=7, width=9, color = brewer.pal(9,"Blues"))
+
+# heatmap color scale within the same color family - BLUE
+# save as png
+pheatmap(cor.mat, filename='fst_heatmap.png', annotation_col = hgdp_tgp, annotation_colors = annot_reg_colr, fontsize_row = 5, fontsize_col= 5, angle_col = 90, border_color=NA, height=7, width=9, color = brewer.pal(9,"Blues"))
+
+# save as pdf 
+pheatmap(cor.mat, filename='fst_heatmap.pdf', annotation_col = hgdp_tgp, annotation_colors = annot_reg_colr, fontsize_row = 5, fontsize_col= 5, angle_col = 90, border_color=NA, height=7, width=9, color = brewer.pal(9,"Blues"))
+```
+
+## 4a) F_ST vs geographical distance plot of populations 
+```{r}
+# read-in metadata with longitude and latitude coordinates for each population 
+hgdp_tgp_coor <- read.delim('~/Desktop/Broad/alicia/HGDP_TGP/hgdp_tgp/gnomad_meta_v1.tsv', header=T, sep='\t') %>% select(hgdp_tgp_meta.Population, hgdp_tgp_meta.Genetic.region, hgdp_tgp_meta.Latitude, hgdp_tgp_meta.Longitude, project_meta.title) 
+
+# since the samples within each population have the same coordinates, only keep one for each 
+hgdp_tgp_coor <- unique(hgdp_tgp_coor)  
+
+# create a list of population pairs to calculate the geographical distance between them - 3003 pairs from 78 populations  
+pop_pair <- strsplit(combn(hgdp_tgp_coor$hgdp_tgp_meta.Population, 2, FUN=paste, collapse=" "), " ") # took 2min 
+
+# create an empty list for results
+final_list <- list()
+
+# iterate through the population pairs             
+for (i in 1:length(pop_pair)) {
+    long1 <- hgdp_tgp_coor$hgdp_tgp_meta.Longitude[hgdp_tgp_coor$hgdp_tgp_meta.Population == pop_pair[[i]][1]] # long coor of first population 
+    lat1 <- hgdp_tgp_coor$hgdp_tgp_meta.Latitude[hgdp_tgp_coor$hgdp_tgp_meta.Population == pop_pair[[i]][1]] # lat coor of first population
+    long2 <- hgdp_tgp_coor$hgdp_tgp_meta.Longitude[hgdp_tgp_coor$hgdp_tgp_meta.Population == pop_pair[[i]][2]] # long coor of second population
+    lat2 <- hgdp_tgp_coor$hgdp_tgp_meta.Latitude[hgdp_tgp_coor$hgdp_tgp_meta.Population == pop_pair[[i]][2]] # lat coor of second population 
+    
+    # calculate distance between the population pairs using the longitude and latitude coordinates 
+    dist_calc <- distHaversine(c(long1, lat1), c(long2, lat2)) 
+    
+    # to account for order - if pop1 and pop2 order in the pair list is flipped as compared to the coordinate table  
+    if (dist_calc == 0) { # if the order doesn't match, then the distance will be set to 0  
+      dist_calc2 <- distHaversine(c(long2, lat2), c(long1, lat1)) # so flip the values and calculate distance between the populations again
+      
+      # temporary list to hold the population names and the distance calculated - for organizational purposes  
+      tmp_list <- list(pop1=pop_pair[[i]][2], pop2=pop_pair[[i]][1], distance=dist_calc2)
+      
+      # add temporary list to final list 
+      final_list[[paste0(pop_pair[[i]][2], "-" ,pop_pair[[i]][1])]] <- tmp_list
+      
+      } else { # if population order is correct:
+        
+      # temporary list to hold the population names and the distance calculated - for organizational purposes  
+      tmp_list <- list(pop1=pop_pair[[i]][1], pop2=pop_pair[[i]][2], distance=dist_calc)
+    
+      # add temporary list to final list 
+      final_list[[paste0(pop_pair[[i]][1], "-" ,pop_pair[[i]][2])]] <- tmp_list
+    }
+}
+```
+
+## 4b) Plot setup
+```{r}
+# convert final distance list into a data frame 
+final_df <- bind_rows(final_list)
+
+# read-in file with fst values 
+ds <- read.table('~/Desktop/Broad/alicia/HGDP_TGP/fst_and_f2/mean_fst.txt')
+colnames(ds) <- c("pop1","pop2", "F_st") # make the column names consistent across the two data sets 
+
+# sort population names to make sure we don't run into a problem while merging the tables  
+# the two population columns have different orders in the two data frames 
+final_df$pop_min <- pmin(final_df$pop1, final_df$pop2)
+final_df$pop_max <- pmax(final_df$pop1, final_df$pop2)
+ds$pop_min <- pmin(ds$pop1, ds$pop2)
+ds$pop_max <- pmax(ds$pop1, ds$pop2)
+
+# merge tables for plotting 
+merged_ds <- merge(ds, final_df, by = c("pop_min","pop_max"))
+
+# only select the desired columns 
+plot_ds <- merged_ds %>% select(pop_min, pop_max, F_st, distance) %>% rename(pop1 = pop_min, pop2 = pop_max, Distance = distance)
+
+# Balochi & Brahui, and Palestinian & Druze have geographical distance of 0 because they've got the same coordinates - located close/on top of each other 
+
+# color and shape annotations for plot 
+plot_annot <- hgdp_tgp_coor %>% select(hgdp_tgp_meta.Population, hgdp_tgp_meta.Genetic.region, project_meta.title) 
+
+# merge the dataset with the annotation dataframe 
+# first join for pop1, then pop2, then rename the added columns
+plot_merged <-  left_join(plot_ds, plot_annot, by=c("pop1" = "hgdp_tgp_meta.Population")) %>% left_join(plot_annot, by=c("pop2" = "hgdp_tgp_meta.Population")) %>% rename(pop1_GR = hgdp_tgp_meta.Genetic.region.x, pop1_Project = project_meta.title.x, pop2_GR = hgdp_tgp_meta.Genetic.region.y, pop2_Project = project_meta.title.y)
+
+# set a True or False column for coloring 
+plot_merged$same_GR <- ifelse(plot_merged$pop1_GR == plot_merged$pop2_GR, 'Yes', 'No')
+
+plot_merged$project <- ifelse(plot_merged$pop1_Project == plot_merged$pop2_Project, plot_merged$pop1_Project, 'Different Projects')
+
+```
+
+## 4c) Plot and save
+```{r}
+p <- ggplot(plot_merged, aes(x = Distance, y = F_st, linetype=project, shape = project)) +
+  geom_point(aes(color = same_GR), size = 1) + 
+  geom_smooth(method=lm) +
+  theme_classic() + 
+  labs(shape = "Projects", color = "Within the same region")  + 
+  ylab(bquote(F[ST])) +
+  scale_linetype_manual(values=c(1,2,10), name="Projects")+
+  theme(
+    plot.margin = unit(c(5.8,3,1,1),"cm"), 
+    axis.title = element_text(size = 9), 
+    legend.title = element_text(size = 9),
+    legend.text = element_text(size = 7.5)) +
+  guides(
+    shape=guide_legend(override.aes=list(size=2)),
+    color=guide_legend(override.aes=list(size=1.8)))
+
+ggsave('fst_vs_distance.pdf', p, width=7, height=5) # pdf 
+ggsave('fst_vs_distance.png', p, width=7, height=5) # png 
+```
