@@ -17,13 +17,20 @@ The tutorials have the following software requirements if you would like to run 
 To run the tutorials, the user will need to start up a Google Cloud cluster on their own Google Cloud project. More information on creating Google Cloud projects can be found [here](https://cloud.google.com/resource-manager/docs/creating-managing-projects).
 
 ### How to start a Google Cloud cluster:
-- The tutorials use hail, so we recommend starting clusters using `hailctl`. 
-    - More information on using hail on the cloud can be found [here](https://hail.is/docs/0.2/hail_on_the_cloud.html).
+- The tutorials use Hail (version: 0.2.109), so we recommend starting clusters using `hailctl`. 
+    - More information on using Hail on the cloud can be found [here](https://hail.is/docs/0.2/hail_on_the_cloud.html).
     -  More information on `hailctl` can be found [here](https://hail.is/docs/0.2/cloud/google_cloud.html#hailctl-dataproc). 
-- To run the tutorials with the gnomAD components you will need to add the following arguments to your `hailctl dataproc` command:
+- To run the tutorials with the gnomAD components, you will need to add the following arguments to your `hailctl dataproc` command:
     - `--packages gnomad` OR `--packages "git+https://github.com/broadinstitute/gnomad_methods.git@main"`
-- **If you plan to run Notebook 5**, we suggest you start your cluster with the following commmand:
-    >`hailctl dataproc start qc-notebook5 --project [YOUR_PROJECT_NAME] --num-secondary-workers 50 --region=us-central1 --zone=us-central1-b --packages git+https://github.com/broadinstitute/gnomad_methods.git --master-machine-type n1-highmem-8 --worker-machine-type n1-highmem-8 --big-executors`
+- For certain notebooks, we suggest you start your cluster as follows:
+    - **Notebooks 1 and 2**: 
+        >`hailctl dataproc start [YOUR_CLUSTER_NAME] --project [YOUR_PROJECT_NAME] --num-secondary-workers 20 --region=us-central1 --packages gnomad` 
+    - **Notebook 5**:
+        >`hailctl dataproc start qc-notebook5 --project [YOUR_PROJECT_NAME] --num-secondary-workers 50 --region=us-central1 --zone=us-central1-b --packages git+https://github.com/broadinstitute/gnomad_methods.git --master-machine-type n1-highmem-8 --worker-machine-type n1-highmem-8 --big-executors`
+- After starting a cluster, you can view the notebooks using the following command:
+    >`hailctl dataproc connect [YOUR_CLUSTER_NAME] notebook --zone [CLUSTER_ZONE]`
+- To stop your cluster once done:
+    >`hailctl dataproc stop [YOUR_CLUSTER_NAME] --region [us-central1]`
 
 ## Links to view notebooks
 To view the tutorials rendered so that jupyter notebook links function properly click on the links below for each notebook:
