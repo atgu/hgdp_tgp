@@ -62,7 +62,7 @@ single_pca_plot <- function(region = c('GLOBAL', 'AFR', 'EUR', 'AMR', 'EAS', 'CS
     # add information to plot
     pca_plot <- pca_plot +
       geom_point(pc_scores, mapping = aes_string(x=which_pc1, y=which_pc2, color='hgdp_tgp_meta.Genetic.region', shape='project_meta.title')) + 
-      scale_color_manual(values=region_color, labels=unique(pc_scores$hgdp_tgp_meta.Genetic.region), name='Regions') 
+      scale_color_manual(values=region_color, name='Regions') 
     
     # SUBCONTINENTAL PCA
     } else if (region %in% c('AFR', 'EUR', 'AMR', 'EAS', 'CSA', 'OCE', 'MID')) {
@@ -74,7 +74,7 @@ single_pca_plot <- function(region = c('GLOBAL', 'AFR', 'EUR', 'AMR', 'EAS', 'CS
       # add information to plot
       pca_plot <- pca_plot +
         geom_point(pc_scores, mapping = aes_string(x=which_pc1, y=which_pc2, color='hgdp_tgp_meta.Population', shape='project_meta.title')) + 
-        scale_color_manual(values=pop_color, labels=unique(pc_scores$hgdp_tgp_meta.Population), name='Populations') 
+        scale_color_manual(values=pop_color, name='Populations') 
         
       # in case user doesn't specify 'region' argument when running the function  
       } else{
@@ -162,4 +162,9 @@ ALL_pca <- plot_grid(GLOBAL_pca[[1]], AFR_pca[[1]], AMR_pca[[1]], CSA_pca[[1]], 
 ggsave('pca/without_outliers/plots/ALL_pca_1to8_without_outliers.pdf', ALL_pca, width=15, height=28)
 ggsave('pca/without_outliers/plots/ALL_pca_1to8_without_outliers.png', ALL_pca, width=15, height=28)
 ```
+
+
+
+
+
 
