@@ -1,0 +1,4 @@
+.jp-OutputArea-output pre {
+  overflow-y: auto;
+  max-height: 500px;
+}
