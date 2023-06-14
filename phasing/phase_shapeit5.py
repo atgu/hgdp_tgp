@@ -1,7 +1,6 @@
 __author__ = 'Lindo Nkambule'
 
 import argparse
-import os
 import hail as hl
 import hailtop.batch as hb
 import pandas as pd
@@ -30,10 +29,10 @@ def run_phasing_batch(
             region: str = None,
             genetic_map_file: hb.ResourceFile = None,
             pedigree: hb.ResourceFile = None,
-            ncpu: int = 16,
-            memory: str = 'highmem',
+            ncpu: int = 8,
+            memory: str = 'standard',
             storage: int = None,
-            img: str = 'docker.io/lindonkambule/shapeit5_2023-03-23_a4a1818:latest',
+            img: str = 'docker.io/lindonkambule/shapeit5_2023-05-05_d6ce1e2:v5.1.1',
     ) -> Job:
         """Phase common variants by chunks"""
         j = b.new_job(name=f'phase_common: {region}')
@@ -57,7 +56,7 @@ def run_phasing_batch(
                     phase_common_static --input {input_vcf['bcf']} \
                     --map {genetic_map_file} \
                     --output {j.phased_common_chunk['chunk.bcf']} \
-                    --thread {ncpu-2} \
+                    --thread {ncpu-1} \
                     --log {j.phased_common_chunk['chunk.log']} \
                     --filter-maf {maf} \
                     --region {region} \
@@ -76,8 +75,8 @@ def run_phasing_batch(
             memory: str = 'standard',
             out_dir: str = None,
             storage: int = None,
-            ncpu: int = 16,
-            img: str = 'docker.io/lindonkambule/shapeit5_2023-03-23_a4a1818:latest',
+            ncpu: int = 4,
+            img: str = 'docker.io/lindonkambule/shapeit5_2023-05-05_d6ce1e2:v5.1.1',
     ) -> Job:
         # requires a VCF/BCF with its index
         j = b.new_job(name=f'ligate_common: {chrom}')
@@ -102,7 +101,7 @@ def run_phasing_batch(
                     ligate_static --input common_chunks_list_ligate.txt \
                     --pedigree {pedigree} \
                     --output {j.ligated_chrom['bcf']} \
-                    --thread {ncpu-2} \
+                    --thread {ncpu-1} \
                     --log {j.ligated_chrom['log']} \
                     --index
                     """
@@ -121,10 +120,10 @@ def run_phasing_batch(
             input_region: str = None,
             genetic_map_file: hb.ResourceFile = None,
             pedigree: hb.ResourceFile = None,
-            ncpu: int = 16,
-            memory: str = 'highmem',
+            ncpu: int = 4,
+            memory: str = 'standard',
             storage: int = None,
-            img: str = 'docker.io/lindonkambule/shapeit5_2023-03-23_a4a1818:latest',
+            img: str = 'docker.io/lindonkambule/shapeit5_2023-05-05_d6ce1e2:v5.1.1',
     ) -> Job:
         """Phase common variants by chunks"""
         j = b.new_job(name=f'phase_rare: {scaffold_region}')
@@ -153,7 +152,7 @@ def run_phasing_batch(
                     --map {genetic_map_file} \
                     --pedigree {pedigree} \
                     --output {j.phased_rare_chunk['chunk.bcf']} \
-                    --thread {ncpu-2} \
+                    --thread {ncpu-1} \
                     --log {j.phased_rare_chunk['chunk.log']}
                     """
                   )
@@ -168,8 +167,8 @@ def run_phasing_batch(
             memory: str = 'standard',
             out_dir: str = None,
             storage: int = None,
-            ncpu: int = 16,
-            img: str = 'docker.io/lindonkambule/shapeit5_2023-03-23_a4a1818:latest',
+            ncpu: int = 4,
+            img: str = 'docker.io/lindonkambule/shapeit5_2023-05-05_d6ce1e2:v5.1.1',
     ) -> Job:
         # requires a VCF/BCF with its index
         j = b.new_job(name=f'concatenate_rare: {chrom}')
@@ -197,7 +196,7 @@ def run_phasing_batch(
         j.command(f"""
                     bcftools index {j.concatenated_chrom['bcf']} \
                     --output {j.concatenated_chrom['bcf.csi']} \
-                    --threads {ncpu-2}
+                    --threads {ncpu-1}
                     """
                   )
 
@@ -207,16 +206,17 @@ def run_phasing_batch(
         return j
 
     batch = hb.Batch(backend=backend,
-                     name='shapeit5-phase-hgdp1kg')
+                     name='shapeit5-phase-hgdp1kg-chr1-22')
 
-    # CHANGE PATH ONCE FAM FILE HAS BEEB FORMATTED
     ped_file = batch.read_input('gs://hgdp-1kg/phasing/hgdp1kg_pedigree.fam')
 
     for i in range(1, 23):
         # read chrom input files
-        vcf_path = f'gs://hgdp-1kg/phasing/filtered_bcfs/hgdp1kg_chr{i}_filtered.bcf'
+        # vcf_path = f'gs://hgdp-1kg/phasing/filtered_bcfs/hgdp1kg_chr{i}_filtered.bcf'
+        vcf_path = f'gs://hgdp-1kg/phasing/qced_bcfs/hgdp1kgp_chr{i}.qced.bcf'
         chrom_vcf = batch.read_input_group(**{'bcf': vcf_path,
                                               'bcf.csi': f'{vcf_path}.csi'})
+
         vcf_size = round(get_file_size(vcf_path))
 
         map_file = batch.read_input(f'gs://hgdp-1kg/phasing/maps/b38/chr{i}.b38.gmap.gz')
@@ -236,7 +236,6 @@ def run_phasing_batch(
                 genetic_map_file=map_file,
                 storage=round(vcf_size*1.5)
             ).phased_common_chunk
-            # for i in range(2)
             for i in range(len(common_regions))
         ]
 
@@ -245,10 +244,10 @@ def run_phasing_batch(
             b=batch,
             common_variants_chunks_list=common_chunks_phased,
             pedigree=ped_file,
-            output_vcf_name='hgdp1kg',
+            output_vcf_name='hgdp1kgp',
             chrom=f'chr{i}',
             out_dir=output_path,
-            storage=round(vcf_size*2)
+            storage=round(vcf_size*0.1)
         ).ligated_chrom
 
         # 2A. Phase rare chunks
@@ -267,9 +266,8 @@ def run_phasing_batch(
                 input_region=rare_regions[i][1],  # org (4th col in chunks)
                 genetic_map_file=map_file,
                 pedigree=ped_file,
-                storage=round(vcf_size*2*1.5)  # we have two input files (unphased VCF+scaffold) and one output
+                storage=round(vcf_size*1.5*1.5)  # we have two input files (unphased VCF+scaffold) and one output
             ).phased_rare_chunk
-            # for i in range(2)
             for i in range(len(rare_regions))
         ]
 
@@ -277,11 +275,11 @@ def run_phasing_batch(
         concatenated_chunks = concatenate_rare_chunks(
             b=batch,
             rare_variants_chunks_list=rare_chunks_phased,
-            output_vcf_name='hgdp1kg',
+            output_vcf_name='hgdp1kgp',
             chrom=f'chr{i}',
             out_dir=output_path,
-            storage=round(vcf_size*2)
-        ).ligated_chunk
+            storage=round(vcf_size*0.1)
+        ).concatenated_chrom
 
     batch.run()
 
