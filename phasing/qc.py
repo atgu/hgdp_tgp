@@ -86,7 +86,7 @@ def main():
         chrom_vcf = batch.read_input_group(**{'bcf': vcf_path,
                                               'bcf.csi': f'{vcf_path}.csi'})
 
-        qc_vcf(b=batch, input_vcf=chrom_vcf, chrom=f'chr{i}', storage=vcf_size*2+10)
+        qc_vcf(b=batch, input_vcf=chrom_vcf, chrom=f'chr{i}', out_dir=args.work_dir, storage=vcf_size*2+10)
 
     batch.run()
 
