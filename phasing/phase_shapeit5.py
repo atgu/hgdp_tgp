@@ -208,21 +208,20 @@ def run_phasing_batch(
     batch = hb.Batch(backend=backend,
                      name='shapeit5-phase-hgdp1kg-chr1-22')
 
-    ped_file = batch.read_input('gs://hgdp-1kg/phasing/hgdp1kg_pedigree.fam')
+    ped_file = batch.read_input(f'{output_path}/hgdp1kg_pedigree.fam')
 
     for i in range(1, 23):
         # read chrom input files
-        # vcf_path = f'gs://hgdp-1kg/phasing/filtered_bcfs/hgdp1kg_chr{i}_filtered.bcf'
-        vcf_path = f'gs://hgdp-1kg/phasing/qced_bcfs/hgdp1kgp_chr{i}.qced.bcf'
+        vcf_path = f'{output_path}/qced_bcfs/hgdp1kgp_chr{i}.qced.bcf'
         chrom_vcf = batch.read_input_group(**{'bcf': vcf_path,
                                               'bcf.csi': f'{vcf_path}.csi'})
 
         vcf_size = round(get_file_size(vcf_path))
 
-        map_file = batch.read_input(f'gs://hgdp-1kg/phasing/maps/b38/chr{i}.b38.gmap.gz')
+        map_file = batch.read_input(f'{output_path}/maps/b38/chr{i}.b38.gmap.gz')
 
         # 1A. Phase common chunks
-        common_chunks_file = pd.read_csv(f'gs://hgdp-1kg/phasing/chunks/b38/20cM/chunks_chr{i}.txt',
+        common_chunks_file = pd.read_csv(f'{output_path}/chunks/b38/20cM/chunks_chr{i}.txt',
                                          sep='\t', header=None,
                                          names=['index', 'chrom', 'irg', 'org'])
         common_regions = common_chunks_file['irg'].values.tolist()
@@ -246,12 +245,12 @@ def run_phasing_batch(
             pedigree=ped_file,
             output_vcf_name='hgdp1kgp',
             chrom=f'chr{i}',
-            out_dir=output_path,
+            out_dir=f'{output_path}/shapeit5',
             storage=round(vcf_size*0.1)
         ).ligated_chrom
 
         # 2A. Phase rare chunks
-        rare_chunks_file = pd.read_csv(f'gs://hgdp-1kg/phasing/chunks/b38/4cM/chunks_chr{i}.txt',
+        rare_chunks_file = pd.read_csv(f'{output_path}/chunks/b38/4cM/chunks_chr{i}.txt',
                                        sep='\t', header=None,
                                        names=['index', 'chrom', 'irg', 'org', 'col5', 'col6', 'col7', 'col8'])
         # irg (3rd col) is SCAFFOLD_REG and org (4th col) is INPUT_REG
@@ -277,7 +276,7 @@ def run_phasing_batch(
             rare_variants_chunks_list=rare_chunks_phased,
             output_vcf_name='hgdp1kgp',
             chrom=f'chr{i}',
-            out_dir=output_path,
+            out_dir=f'{output_path}/shapeit5',
             storage=round(vcf_size*0.1)
         ).concatenated_chrom
 
@@ -286,15 +285,15 @@ def run_phasing_batch(
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--billing-project', required=True)
-    parser.add_argument('--out-dir', type=str, default='gs://hgdp-1kg/phasing/shapeit5')
+    parser.add_argument('--billing-project', type=str, required=True)
+    parser.add_argument('--work-dir', type=str, required=True)
 
     args = parser.parse_args()
 
     backend = hb.ServiceBackend(billing_project=args.billing_project,
-                                remote_tmpdir=f'{args.out_dir}/tmp/')
+                                remote_tmpdir=f'{args.work_dir}/tmp/')
 
-    run_phasing_batch(output_path=args.out_dir,
+    run_phasing_batch(output_path=args.work_dir,
                       backend=backend)
 
 

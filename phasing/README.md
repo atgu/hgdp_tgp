@@ -52,3 +52,11 @@ removed. The final pedigree file has 4091 samples in total.
 Because the VCFs were exported before any filtering, we went back and
 [filtered out](https://github.com/atgu/hgdp_tgp/tree/master/phasing/filter_and_convert_to_bcf.py)
 the duplicates and PCA outliers
+
+## 4. Applying QC filters as recommended by SHAPEIT5 developers
+We then applied extra [QC](https://github.com/atgu/hgdp_tgp/tree/master/phasing/qc.py) filters as [recommended by the SHAPEIT5](https://odelaneau.github.io/shapeit5/docs/tutorials/ukb_wgs/) developers. Only variants with: (1) HWE>=1e-30, (2) F_MISSING<=0.1, and (3) ExcHet>=0.5 && ExcHet<=1.5 were included.
+
+## 5. Phasing
+Phasing was run using SHAPEIT5, following the [recommendations from SHAPEIT5](https://odelaneau.github.io/shapeit5/docs/tutorials/ukb_wgs/#phasing) developers.
+Large chunks of [20cM](https://github.com/odelaneau/shapeit5/tree/main/resources/chunks/b38/20cM) and small chunks of [4cM](https://github.com/odelaneau/shapeit5/tree/main/resources/chunks/b38/4cM)
+were used to phase common and rare variants respectively.

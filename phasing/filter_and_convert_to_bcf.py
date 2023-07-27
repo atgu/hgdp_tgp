@@ -16,7 +16,7 @@ def filter_vcf_and_convert(
         storage: int = 500,
         img: str = 'docker.io/lindonkambule/shapeit5_2023-03-23_a4a1818:latest',
 ) -> Job:
-    """This function is for removing 29 (24 PCA outliers+5 duplicate) samples and convert to BCF"""
+    """This function is for removing 29 (24 PCA outliers+5 duplicate) samples and convert VCF to BCF"""
     j = b.new_job(name=f'filter: {chrom}')
 
     j.declare_resource_group(
@@ -65,32 +65,32 @@ def filter_vcf_and_convert(
               )
 
     b.write_output(j.filtered_outfile,
-                   f'{out_dir}/hgdp1kg_{chrom}_filtered')
+                   f'{out_dir}/filtered_bcfs/hgdp1kg_{chrom}_filtered')
 
     return j
 
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--billing-project', required=True)
-    parser.add_argument('--out-dir', type=str, default='gs://hgdp-1kg/phasing/filtered_bcfs')
+    parser.add_argument('--billing-project', type=str, required=True)
+    parser.add_argument('--work-dir', type=str, required=True)
 
     args = parser.parse_args()
 
     backend = hb.ServiceBackend(billing_project=args.billing_project,
-                                remote_tmpdir=f'{args.out_dir}/tmp/')
+                                remote_tmpdir=f'{args.work_dir}/tmp/')
     batch = hb.Batch(backend=backend,
                      name='filter-dups-pcaoutliers-hgdp1kg')
 
-    dups_outliers_list = batch.read_input('gs://hgdp-1kg/phasing/5duplicate_and_24pcaoutliers_samples.tsv')
+    dups_outliers_list = batch.read_input(f'{args.work_dir}/5duplicate_and_24pcaoutliers_samples.tsv')
 
-    for i in range(1, 5):
-        vcf_path = f'gs://hgdp-1kg/phasing/input_vcfs/hgdp1kg_chr{i}.vcf.bgz'
+    for i in range(1, 23):
+        vcf_path = f'{args.work_dir}/input_vcfs/hgdp1kg_chr{i}.vcf.bgz'
         chrom_vcf = batch.read_input_group(**{'vcf': vcf_path,
                                               'vcf.tbi': f'{vcf_path}.tbi'})
 
         filter_vcf_and_convert(b=batch, input_vcf=chrom_vcf, samples_to_filter=dups_outliers_list, chrom=f'chr{i}',
-                               out_dir=args.out_dir)
+                               out_dir=args.work_dir)
 
     batch.run()
 
