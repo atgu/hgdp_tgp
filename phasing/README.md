@@ -60,3 +60,26 @@ We then applied extra [QC](https://github.com/atgu/hgdp_tgp/tree/master/phasing/
 Phasing was run using SHAPEIT5, following the [recommendations from SHAPEIT5](https://odelaneau.github.io/shapeit5/docs/tutorials/ukb_wgs/#phasing) developers.
 Large chunks of [20cM](https://github.com/odelaneau/shapeit5/tree/main/resources/chunks/b38/20cM) and small chunks of [4cM](https://github.com/odelaneau/shapeit5/tree/main/resources/chunks/b38/4cM)
 were used to phase common and rare variants respectively.
+
+## 6. Imputation performance comparison with 1kGP
+We compared  imputation accuracy between using HGDP+1kGP vs. 1kGP NYGC in array (GSA, H3Africa, MEGA) and
+low coverage (0.5X, 1.0X, 2.0X, 4.0X) datasets. The 1kGP reference panel used in the comparisons is from [here](http://ftp.1000genomes.ebi.ac.uk/vol1/ftp/data_collections/1000G_2504_high_coverage/working/20220422_3202_phased_SNV_INDEL_SV) and
+was [downloaded using this script](https://github.com/atgu/hgdp_tgp/tree/master/phasing/comparisons/donwload_1kgp.sh). Below are the steps
+we followed:
+
+### 6.1. Array dataset
+We looked at 3 different arrays: GSA, H3Africa, MEGA, and 3 reference panels: HGDP+1kGP, NYGC 1kGP, and TOPMed. For TOPMed,
+we already had imputed data for the 3 arrays, and the only thing we did was
+[split the VCF files by chromosome and convert to BCF](https://github.com/atgu/hgdp_tgp/tree/master/phasing/comparisons/split_topmed_by_chrom.py)
+to avoid loading the large imputed VCF file for every chromosome. Next, for each array data, we ran [phasing
+using SHAPEIT5](https://github.com/atgu/hgdp_tgp/tree/master/phasing/comparisons/impute_array.py) following the [recommendations from here](https://odelaneau.github.io/shapeit5/docs/tutorials/ukb_snp_array/#phasing)
+and imputation using IMPUTE5 twice, using HGDP+1kGP and NYGC 1kGP as reference panels. 
+
+### 6.2 Low-coverage dataset
+For low-coverage data we only looked at HGDP+1kGP vs. NYGC 1kGP and looked at the following coverages: 0.5X, 1.0X, 2.0X, 4.0X.
+We used GLIMPSE1 for [phasing+imputation](https://github.com/atgu/hgdp_tgp/tree/master/phasing/comparisons/impute_lowcov.py).
+
+### 6.3 Concordance
+To look at how well each reference panel is doing, we looked at the concordance between the imputed sets (estimation) using the references
+mentioned above and the original 30X NeuroGAP set (truth) using the [GLIMPSE2_concordance](https://odelaneau.github.io/GLIMPSE/docs/documentation/concordance/) module.
+Lastly, for each MAF bin, we computed the average r<sup>2</sup> (across chr1-22).
