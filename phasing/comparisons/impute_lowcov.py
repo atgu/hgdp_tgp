@@ -45,6 +45,7 @@ def phase_impute(
     j.image(img)
     j.cpu(ncpu)
     j.memory(memory)
+    j.regions(['us-central1'])
     j.storage(f'{storage}Gi')
 
     j.command(f"""
@@ -89,6 +90,7 @@ def ligate_chunks(
     j.image(img)
     j.cpu(ncpu)
     j.memory(memory)
+    j.regions(['us-central1'])
     j.storage(f'{storage}Gi')
     j.command(f'echo "{imp_chunks}" > list.imputed.txt')
     j.command(f"""
@@ -107,7 +109,7 @@ def ligate_chunks(
               )
 
     b.write_output(j.ligated_chunk,
-                   f'{out_dir}/comparisons/imputation_accuracy/coverage/imputation/{coverage}/{output_vcf_name}.imputed')
+                   f'{out_dir}/comparisons/imputation_accuracy/coverage/filtered_hgdp1kgp/imputation/{coverage}/{output_vcf_name}.imputed')
 
     return j
 
@@ -123,7 +125,7 @@ def main():
     backend = hb.ServiceBackend(billing_project=args.billing_project,
                                 remote_tmpdir=f'{args.work_dir}/tmp/')
     batch = hb.Batch(backend=backend,
-                     name=f'lowcov-imputation-{args.reference}-all-chroms')
+                     name=f'lowcov-imputation-hgdp_1kgp_filtered_ref-all-chroms')
 
     # compared N depths of coverage (0.5X, 1X, 2X, 4X, 6X, 10X, 20X).
     # Only worth looking at 0.5X, 1X, 2X, and 4X here since we won't be sequencing higher depths.
@@ -137,7 +139,8 @@ def main():
     for i in range(1, 23):
         # read input files
         if args.reference == 'hgdp1kgp':
-            ref_vcf_p = f'{args.work_dir}/shapeit5/phase_rare/hgdp1kgp_chr{i}.full.shapeit5_rare.bcf'
+            # ref_vcf_p = f'{args.work_dir}/shapeit5/phase_rare/hgdp1kgp_chr{i}.full.shapeit5_rare.bcf'
+            ref_vcf_p = f'{args.work_dir}/shapeit5/filtered_phased_SNVs_INDELs/hgdp1kgp_chr{i}.filtered.SNV_INDEL.phased.shapeit5.bcf'
             ref_in_vcf = batch.read_input_group(**{'vcf': ref_vcf_p,
                                                    'vcf.ind': f'{ref_vcf_p}.csi'})
         else:

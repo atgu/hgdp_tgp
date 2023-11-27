@@ -98,6 +98,7 @@ def imputation(
 
     j.cpu(ncpu)
     j.memory(memory)
+    j.regions(['us-central1'])
     j.storage(f'{storage}Gi')
     j.image(img)
 
@@ -165,7 +166,7 @@ def concatenate_chunks(
               )
 
     b.write_output(j.concatenated_chrom,
-                   f'{out_dir}/comparisons/imputation_accuracy/array/imputation/{output_vcf_name}.imputed')
+                   f'{out_dir}/comparisons/imputation_accuracy/array/filtered_hgdp1kgp/imputation/{output_vcf_name}.imputed')
 
     return j
 
@@ -181,7 +182,7 @@ def main():
     backend = hb.ServiceBackend(billing_project=args.billing_project,
                                 remote_tmpdir=f'{args.work_dir}/tmp/')
     batch = hb.Batch(backend=backend,
-                     name=f'array-imputation-{args.reference}-all-chroms')
+                     name=f'array-imputation-hgdp_1kgp_filtered_ref-all-chroms')
 
     # compared 5 arrays: H3Africa, GSA, MEGA, PsychChip, Omni2.5. Only worth looking at H3Africa, GSA, and MEGA.
     # arrays = ['GSA', 'H3Africa', 'MEGA', 'PsychChip', 'Omni2.5']
@@ -195,7 +196,8 @@ def main():
     for i in range(1, 23):
         # read input files
         if args.reference == 'hgdp1kgp':
-            ref_vcf_p = f'{args.work_dir}/shapeit5/phase_rare/hgdp1kgp_chr{i}.full.shapeit5_rare.bcf'
+            # ref_vcf_p = f'{args.work_dir}/shapeit5/phase_rare/hgdp1kgp_chr{i}.full.shapeit5_rare.bcf'
+            ref_vcf_p = f'{args.work_dir}/shapeit5/filtered_phased_SNVs_INDELs/hgdp1kgp_chr{i}.filtered.SNV_INDEL.phased.shapeit5.bcf'
             ref_in_vcf = batch.read_input_group(**{'vcf': ref_vcf_p,
                                                    'vcf.ind': f'{ref_vcf_p}.csi'})
         else:
