@@ -103,7 +103,7 @@ def array_concordance(
         validation_vcf = b.read_input_group(**{'vcf': validation_p,
                                                'vcf.ind': f'{validation_p}.tbi'})
 
-        imputed_calls_path = f'{out_dir}/imputation_accuracy/array/imputation'
+        imputed_calls_path = f'{out_dir}/imputation_accuracy/array/filtered_hgdp1kgp/imputation'
         for arr in arrays:
             # imputed VCF
             if ref == 'hgdp1kgp' or ref == '1kgp':
@@ -130,7 +130,7 @@ def array_concordance(
                             chrom=f'chr{i}',
                             variant_type=var,
                             out_file_name=outfilename,
-                            out_dir=f'{out_dir}/imputation_accuracy/array/concordance',
+                            out_dir=f'{out_dir}/imputation_accuracy/array/filtered_hgdp1kgp/concordance',
                             storage=round(gnomad_sites_size+validation_size+imputed_vcf_size+storage_buffer),
                             data_type='array')
 
@@ -159,7 +159,7 @@ def lowcov_concordance(
 
         for depth in depths:
             # imputed VCF
-            imputed_p = f'{out_dir}/imputation_accuracy/coverage/imputation/{depth}/neurogap_{depth}_chr{i}_{ref}.imputed.bcf'
+            imputed_p = f'{out_dir}/imputation_accuracy/coverage/filtered_hgdp1kgp/imputation/{depth}/neurogap_{depth}_chr{i}_{ref}.imputed.bcf'
 
             imputed_vcf = b.read_input_group(**{'vcf': imputed_p,
                                                 'vcf.ind': f'{imputed_p}.csi'})
@@ -178,7 +178,7 @@ def lowcov_concordance(
                             chrom=f'chr{i}',
                             variant_type=var,
                             out_file_name=outfilename,
-                            out_dir=f'{out_dir}/imputation_accuracy/coverage/concordance',
+                            out_dir=f'{out_dir}/imputation_accuracy/coverage/filtered_hgdp1kgp/concordance',
                             storage=round(gnomad_sites_size+validation_size+imputed_vcf_size+storage_buffer),
                             data_type='lowcov')
 
@@ -194,7 +194,7 @@ def main():
     backend = hb.ServiceBackend(billing_project=args.billing_project,
                                 remote_tmpdir=f'{args.work_dir}/tmp/')
     batch = hb.Batch(backend=backend,
-                     name=f'{args.data_type}-imputation-accuracy')
+                     name=f'{args.data_type}-imputation-accuracy-hgdp_1kgp_filtered_ref')
 
     references = ['hgdp1kgp', '1kgp', 'topmed'] if args.data_type == 'array' else ['hgdp1kgp', '1kgp']
     for reference in references:
