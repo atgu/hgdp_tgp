@@ -13,9 +13,11 @@ library(reshape2)
 library(dplyr)
 ```
 
+# In order to run the code below, you first need to download the pairwaise doubleton count table, produced in HGDP+1kGP tutorial nb4, locally. Make sure to update the input and output file paths in the code below accordingly.  
+
 ## This markdown shows how to make a sample-level F2 heatmap and calculate F2 related mean & SD statistics 
 
-### 1) Set up matrix for heatmap
+# 1) Set up matrix for heatmap
 ```{r}
 # read-in table with doubleton counts 
 ds <- read.csv(file = '~/Desktop/Broad/alicia/HGDP_TGP/fst_and_f2/doubleton_count.csv', sep = "\t") # 5707131 rows × 3 columns
@@ -47,22 +49,17 @@ rownames(cor_mat) <- cor_mat[,1]
 
 # remove the sample ID column and convert data frame into a correlation matrix (3380 by 3380)
 cor_mat <- as.matrix(cor_mat[-1])
-
-# make a heatmap - takes a bit time to run 
-#pheatmap(cor_mat)
 ```
 
-### 2) Set up annotation data frame and colors for heat map - region for row and population for column
-```{r}
-# read-in metadata from gnomAD and select only the desired columns - this file is either the original metadata from the drive (downloaded the excel sheet as a tsv) or one sent by Alicia to me and Zan 
-hgdp_tgp_unfil <- read.delim('~/Desktop/Broad/alicia/HGDP_TGP/hgdp_tgp/gnomad_meta_v1.tsv', header=T, sep='\t') %>% select(s, project_meta.title, starts_with('hgdp_tgp_meta')) 
 
-# some sample IDs have 'v3.1::' prefix as done in gnomAD so stripping that in order to match correctly with the pc score files 
-hgdp_tgp_unfil$s <- gsub('v3.1::', '', hgdp_tgp_unfil$s)
+# 2) Set up annotation data frame and colors for heatmap - region for row and population for column
+```{r}
+# read-in metadata from gnomAD and select only the desired columns  
+hgdp_tgp_unfil <- read.delim('~/Desktop/Broad/alicia/HGDP_TGP/gnomad_meta_for_plots.tsv', header=T, sep='\t') 
 
 # set up df for annotation  
 hgdp_tgp <- hgdp_tgp_unfil[hgdp_tgp_unfil$s %in% unique(ds$sample1),] # subset metadata to only samples with doubletons 
-hgdp_tgp <- hgdp_tgp[c("s", "hgdp_tgp_meta.Population", "hgdp_tgp_meta.Genetic.region")] # select only sample ID, population and region columns 
+hgdp_tgp <- hgdp_tgp[c("s", "population", "genetic.region")] # select only sample ID, population and region columns 
 rownames(hgdp_tgp) <- hgdp_tgp[,1] # set sample IDs as rownames 
 hgdp_tgp <- hgdp_tgp[-1] # remove the sample ID column 
 colnames(hgdp_tgp) <- c("Population", "Region") # rename columns 
@@ -71,23 +68,25 @@ hgdp_tgp_pop <- within(hgdp_tgp, rm(Region)) # only keep the population column
 
 ### set color for heat map annotation - obtain from metadata itself for consistency across all plots
 # region 
-reg_colr_df <- unique(hgdp_tgp_unfil[c("hgdp_tgp_meta.Genetic.region", "hgdp_tgp_meta.Continent.colors")])
-reg_colr <- reg_colr_df %>% pull(hgdp_tgp_meta.Continent.colors, hgdp_tgp_meta.Genetic.region)
-#annot_reg_colr <- list(Region = reg_colr) # convert into a list  
+reg_colr_df <- unique(hgdp_tgp_unfil[c("genetic.region", "continent.colors")])
+reg_colr <- reg_colr_df %>% pull(continent.colors, genetic.region)
 
 # population within each region  
-pop_colr_df <- unique(hgdp_tgp_unfil[c("hgdp_tgp_meta.Population", "hgdp_tgp_meta.Pop.colors")])
-pop_colr <- pop_colr_df %>% pull(hgdp_tgp_meta.Pop.colors, hgdp_tgp_meta.Population)
-annot_colr <- list(Region = reg_colr, Population = pop_colr) # convert into a list 
+pop_colr_df <- unique(hgdp_tgp_unfil[c("population", "pop.colors")])
+pop_colr <- pop_colr_df %>% pull(pop.colors, population)
+
+# convert into a list 
+annot_colr <- list(Region = reg_colr, Population = pop_colr) 
 ```
 
-### 3a) Trial run on a subsetted ds
+
+# 3a) Trial run on a subsetted ds - since the whole heatmap is dense, printing it crashes the markdown 
 ```{r}
 trial_mat <- cor_mat[1:500,1:500] # subset dataset for trial purposes 
 trial_log <- log10(trial_mat+1) # take the log10 since the count values have a big range; +1 to avoid values that are ~0
 make_space <-vector(mode="character", length = length(rownames(trial_log))) # used to make space between plot and legend 
 
-# close to final heatmap 
+# heatmap 
 setHook("grid.newpage", function() pushViewport(viewport(x=1,y=1,width=.9, height=.9, name="vp", just=c("right","top"))), action="prepend")
 legn_range <- head(seq(0, max(trial_log), .5), -1) # legend range 
 pheatmap(trial_log, annotation_row = hgdp_tgp_pop, annotation_col = hgdp_tgp_reg, angle_col = 90, annotation_legend = F, annotation_colors = annot_colr, border_color=NA, treeheight_row=0,height=7, width=9, show_rownames = T, show_colnames = F, legend_breaks = c(legn_range, max(trial_log)), legend_labels = round(c((10^legn_range)-1, (10^(max(trial_log)))-1), 0), labels_row = make_space)
@@ -96,13 +95,13 @@ grid.text("Samples", x = 0.45, y=0.08, gp=gpar(fontsize=13)) # xlabel
 grid.text("Samples", x=-0.02, rot=90, gp=gpar(fontsize=13)) # ylabel
 ```
 
-### 3b) Plot heatmap with original dataset - takes a bit time to run (~7min); save as pdf or png
+# 3b) Plot heatmap with original dataset - takes ~7min to run; saves as a png when you run the code chunk 
 ```{r}
 mat_log <- log10(cor_mat+1)
-make_space <-vector(mode="character", length = length(rownames(mat_log))) # used to make space between plot and legend 
+make_space <- vector(mode="character", length = length(rownames(mat_log))) # used to make space between plot and legend 
 legn_range <- head(seq(0, max(mat_log), .5), -1) # legend range 
-#png(file="f2_heatmap.png", width = 9, height = 9, units = 'in', res = 300) # uncomment this line and comment the next one (pdf) to save heatmap as png 
-pdf(file="f2_heatmap.pdf", width = 9, height = 9) # save as pdf 
+png(file="f2_heatmap.png", width = 9, height = 9, units = 'in', res = 300) # uncomment this line and comment the next one (pdf) to save heatmap as png 
+#pdf(file="f2_heatmap.pdf", width = 9, height = 9) # save as pdf 
 setHook("grid.newpage", function() pushViewport(viewport(x=1,y=1,width=.9, height=.9, name="vp", just=c("right","top"))), action="prepend")
 pheatmap(mat_log, annotation_row = hgdp_tgp_pop, annotation_col = hgdp_tgp_reg, annotation_colors = annot_colr, annotation_legend = F, angle_col = 90, border_color=NA, treeheight_row=0, height=7, width=9, show_rownames = T, show_colnames = F, legend_breaks = c(legn_range, max(mat_log)), legend_labels = round(c((10^legn_range)-1, (10^(max(mat_log)))-1), 0), labels_row = make_space)
 setHook("grid.newpage", NULL, "replace")
@@ -111,17 +110,36 @@ grid.text("Samples", x=-0.02, rot=90, gp=gpar(fontsize=13)) # ylabel
 dev.off() # close file ; x = 0.45, y=0.14
 ```
 
+# 3c) Plot only the upper triangle of the f2 heatmap - saves as a png when you run the code chunk
+```{r}
+# order the rows and columns of the correlation matrix according to the clustering from the heatmap and set the lower triangle to NA values (keeping the original dendogram)
+mat_log <- log10(cor_mat+1)
+rnames <- rownames(mat_log)
+hc <-  hclust(dist(mat_log))
+mat_log2 <- mat_log[hc$order, hc$order]
+mat_log2[lower.tri(mat_log2)] <- NA
+mat_log2 <- mat_log2[rnames, rnames]
+
+make_space <-vector(mode="character", length = length(rownames(mat_log2))) # used to make space between plot and legend 
+legn_range <- head(seq(0, max(mat_log2, na.rm = T), .5), -1) # legend range 
+png(file="f2_heatmap_uppertri.png", width = 9, height = 9, units = 'in', res = 300) # save heatmap as png 
+setHook("grid.newpage", function() pushViewport(viewport(x=1,y=1,width=.9, height=.9, name="vp", just=c("right","top"))), action="prepend")
+pheatmap(mat_log2, cluster_col = hc, cluster_row = hc, annotation_row = hgdp_tgp_pop, annotation_col = hgdp_tgp_reg, angle_col = 90, annotation_legend = F, annotation_colors = annot_colr, border_color=NA, treeheight_row=0,height=7, width=9, show_rownames = T, show_colnames = F, legend_breaks = c(legn_range, max(mat_log)), legend_labels = round(c((10^legn_range)-1, (10^(max(mat_log)))-1), 0), labels_row = make_space, na_col="white")
+setHook("grid.newpage", NULL, "replace")
+grid.text("Samples", x = 0.45, y=0.08, gp=gpar(fontsize=13)) # xlabel
+grid.text("Samples", x=-0.02, rot=90, gp=gpar(fontsize=13)) # ylabel
+dev.off() # close file 
+```
+
+
 # 4a) Get stats for manuscript - set up data
 ```{r}
 # read-in sample ID, population, genetic region, and project columns from the metadata 
-hgdp_tgp_meta <- read.delim('~/Desktop/Broad/alicia/HGDP_TGP/hgdp_tgp/gnomad_meta_v1.tsv', header=T, sep='\t') %>% select(s, hgdp_tgp_meta.Population, hgdp_tgp_meta.Genetic.region, project_meta.title) 
-
-# some sample IDs have 'v3.1::' prefix as done in gnomAD so stripping that in order to match correctly with the pc score files 
-hgdp_tgp_meta$s <- gsub('v3.1::', '', hgdp_tgp_meta$s)
+hgdp_tgp_meta <- read.delim('~/Desktop/Broad/alicia/HGDP_TGP/gnomad_meta_for_plots.tsv', header=T, sep='\t') 
 
 # merge the dataset with the annotation dataframe 
 # first join for pop1, then pop2, then rename the added columns
-ds_with_meta <-  left_join(ds, hgdp_tgp_meta, by=c("sample1" = "s")) %>% left_join(hgdp_tgp_meta, by=c("sample2" = "s")) %>% rename(sample1_pop = hgdp_tgp_meta.Population.x, sample1_GR = hgdp_tgp_meta.Genetic.region.x, sample1_project = project_meta.title.x, sample2_pop = hgdp_tgp_meta.Population.y, sample2_GR = hgdp_tgp_meta.Genetic.region.y, sample2_project = project_meta.title.y)
+ds_with_meta <-  left_join(ds, hgdp_tgp_meta, by=c("sample1" = "s")) %>% left_join(hgdp_tgp_meta, by=c("sample2" = "s")) %>% rename(sample1_pop = population.x, sample1_GR = genetic.region.x, sample1_project = project.x, sample2_pop = population.y, sample2_GR = genetic.region.y, sample2_project = project.y)
 ```
 
 # 4b) Calculate mean and standard deviation statistics 
@@ -138,17 +156,81 @@ ds_with_meta <- ds_with_meta %>% mutate(
 #### mean average of doubleton #####
 
 ## pairs of individuals within a population 
-ds_with_meta %>% filter(same_pop == "Yes") %>% summarise(mean(count)) # mean = 51.82778	
+ds_with_meta %>% filter(same_pop == "Yes") %>% summarise(mean(count)) # mean = 51.62388	; 51.82778 (old)	
 
 ## pairs of individuals within AFR populations
-ds_with_meta %>% filter(same_pop == "Yes", sample1_GR == "AFR") %>% summarise(mean(count)) # mean = 76.3766	
+ds_with_meta %>% filter(same_pop == "Yes", sample1_GR == "AFR") %>% summarise(mean(count)) # mean = 76.3766
 
 ## pairs of individuals within out-of-Africa populations
-ds_with_meta %>% filter(same_pop == "Yes", sample1_GR != "AFR") %>% summarise(mean(count)) # mean = 43.73861	
+ds_with_meta %>% filter(same_pop == "Yes", sample1_GR != "AFR") %>% summarise(mean(count)) # mean = 43.43508; 43.73861 (old)	
 
 ## pairs of individuals across populations within a genetic region
-ds_with_meta %>% filter(same_GR == "Yes", same_pop == "No") %>% summarise(mean(count), sd(count)) # mean = 6.789911, sd = 18.30799	
+ds_with_meta %>% filter(same_GR == "Yes", same_pop == "No") %>% summarise(mean(count), sd(count)) # mean = 6.837925; 6.789911 (old), sd = 19.09835; 18.30799 (old)	
 
 ## pairs of individuals across populations from different genetic regions 
 ds_with_meta %>% filter(same_GR == "No", same_pop == "No") %>% summarise(mean(count), sd(count)) # mean = 0.7969933, sd = 1.778934		
 ```
+
+
+# 5) Look more into the sample pairs that have high # of doubletons 
+```{r}
+# look through 
+ds_with_meta[order(ds_with_meta$count, decreasing = TRUE),] %>% select(sample1, sample2, count, sample1_pop, sample2_pop, same_GR) %>% filter(same_GR == "No") %>% slice_head(n = 15) 
+
+# the highest doubleton counts are seen among the San samples: LP6005443-DNA_G08; LP6005441-DNA_B11; HGDP01029; LP6005441-DNA_A11; HGDP00992; SS6004473; Top 15 pairs are among San samples - doubleton counts between 14717 - 24374. The highest doubleton count across populations is 4068 which is between the BantuSouthAfrica and the San which are both in the same genetic region. Top doubleton counts are among the same popualtion groups. 
+# Need to do more deep dive on the amount of doubleton counts among samples that are from different genetic regions.
+
+# The top 15 highest doubleton counts are among individual pairs from the San population with doubleton counts between 14,717 - 24,374. Very few doubletons are shared among pairs of individuals across populations within a geographical/genetic region (mu=6.846.79, sd=19.118.31) with the highest doubleton count being 4,068 between individuals from BantuSouthAfrica and San which are both AFR populations., Evenand even fewer doubletons are shared among pairs of individuals across populations from different genetic regions (mu=0.8, sd=1.78) with the highest doubleton count being 638 between a pair of individuals from CDX and BEB which are EAS and CSA populations, respectively. 
+
+```
+
+
+
+
+---------------
+###### JUNK CODE #######
+
+### 5) Figure out which populations are interspersed in heatmap 
+```{r}
+mat_log <- log10(cor_mat+1)
+
+# generate heatmap and assign to a variable 
+p_heatmap <- pheatmap(mat_log, annotation_row = hgdp_tgp_pop, annotation_col = hgdp_tgp_reg, annotation_colors = annot_colr, annotation_legend = F, angle_col = 90, border_color=NA, treeheight_row=0, height=7, width=9, show_rownames = T, show_colnames = F)
+
+# plot heatmap dendrogram 
+plot(p_heatmap$tree_row) 
+
+# re-order original data (samples) to match ordering in heatmap
+samples_id <- rownames(cor_mat[p_heatmap$tree_row[["order"]],]) 
+
+# convert vector in to a dataframe
+samples_df <- data.frame(matrix(unlist(samples_id), nrow=length(samples_id), byrow=TRUE)) 
+
+# add column name
+colnames(samples_df) <- "Samples" 
+
+# obtain region and population info for each sample using the metadata df used for heatmap annotation 
+hgdp_tgp2 <- hgdp_tgp
+hgdp_tgp2$Samples <- rownames(hgdp_tgp2) # convert rownames in to a column
+
+# merge the two dfs while keeping the order 
+# by going through the region column in the merged df, we can figure out which populations are interspersed 
+df_merge <- inner_join(samples_df,hgdp_tgp2)
+df_merge
+
+write.csv(df_merge, "~/Desktop/Broad/alicia/HGDP_TGP/plots_all/f2_interspersed_samples.csv", row.names=FALSE)
+
+# height of each branch
+dend <- as.dendrogram(p_heatmap$tree_row)
+plot(dend)
+
+f2_node_height <- get_nodes_attr(dend, "height")
+height_df <- data.frame(matrix(unlist(f2_node_height), nrow=length(f2_node_height), byrow=TRUE)) # convert to df
+
+#colnames(mat_df) <- "Samples"
+write.csv(height_df, "~/Desktop/Broad/alicia/HGDP_TGP/plots_all/f2_dendrogram_heights.csv", row.names=FALSE)
+```
+
+
+
+
