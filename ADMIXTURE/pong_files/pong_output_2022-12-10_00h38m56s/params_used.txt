@@ -1,0 +1,15 @@
+
+-------------------------------------------------------------------
+                            p o n g
+      by A. Behr, K. Liu, T. Devlin, G. Liu-Fang, and S. Ramachandran
+                       Version 1.5 (2021)
+-------------------------------------------------------------------
+-------------------------------------------------------------------
+
+
+pong_filemap file: /Users/zkoenig/Documents/hgdp_tgp_local/ADMIXTURE/pong_files/pong_filemap
+Distance metric: jaccard
+Similarity threshold: 0.970000
+Verbose: False
+
+Full command: /Users/zkoenig/opt/miniconda3/envs/pong/bin/pong -m pong_filemap -i ind2pop.txt -n pop_order_expandednames.txt -l plot_colors.txt

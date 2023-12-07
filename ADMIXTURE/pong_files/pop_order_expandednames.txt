@@ -1,0 +1,7 @@
+AFR	Africa
+AMR	America
+CSA	Central South Asia
+EAS	East Asia
+EUR	Europe
+MID	Middle East
+OCE	Oceania

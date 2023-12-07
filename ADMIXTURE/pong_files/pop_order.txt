@@ -1,0 +1,7 @@
+AFR
+AMR
+CSA
+EAS
+EUR
+MID
+OCE
