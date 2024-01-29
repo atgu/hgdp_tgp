@@ -1,12 +1,7 @@
 __author__ = 'Zan Koenig'
 
 import hailtop.batch as hb
-import hail as hl
 import argparse
-import re
-import subprocess
-import os
-import math
 
 
 def run_admixture(#b: hb.batch.Batch,
@@ -46,7 +41,7 @@ def run_admixture(#b: hb.batch.Batch,
 def main(args):
     # setting the billing project and bucket where the output data will be stored
     backend = hb.ServiceBackend(billing_project='diverse-pop-seq-ref',
-                                bucket='hgdp-1kg')
+                                remote_tmpdir='gs://hgdp-1kg/hgdp_tgp/qc_and_figure_generation/tmp/')
     # setting the name of the batch job
     b = hb.Batch(backend=backend, name='admixture')
 
@@ -63,9 +58,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     # input file path, in plink format (bed, bim, fam)
     parser.add_argument('--bed_file',
-                        default='gs://hgdp-1kg/hgdp_tgp/qc_and_figure_generation/admixture_plink_dataset/post_qc_ld_unrel_only')
+                        default='gs://hgdp-1kg/hgdp_tgp/qc_and_figure_generation/admixture_plink_dataset/hgdp_tgp')
     # output file path, main directory which will contain run folders
-    parser.add_argument('--output_path', default='gs://hgdp-1kg/hgdp_tgp/qc_and_figure_generation/admixture_results')
+    parser.add_argument('--output_path', default='gs://hgdp-1kg/hgdp_tgp/qc_and_figure_generation/admixture_results_v1')
 
     args = parser.parse_args()
 

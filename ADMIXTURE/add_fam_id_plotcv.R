@@ -40,7 +40,7 @@ write.table(merge_fam,
 
 
 # plotting the cross validation
-cv_vals <- read_tsv('admixture_results/cv_error.txt', col_names=FALSE)
+cv_vals <- read_tsv('cv_error.txt', col_names=FALSE)
 
 cv_vals$X2 <- factor(cv_vals$X2, levels = cv_vals$X2)
 
@@ -53,6 +53,7 @@ p <- ggplot(data=cv_vals, aes(x=X2, y=X3, group=1)) +
 
 show(p)
 save_plot('5-fold_cv.png', p, base_height=8, base_width=13)
+save_plot('5-fold_cv.pdf', p, base_height=8, base_width=13)
 
 
 

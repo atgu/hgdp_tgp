@@ -29,28 +29,28 @@ Number of runs: 10
 Major mode: k4r1
 
 Representative runs: k4r1
-	k4r1 represents 10 runs: runs k4r1, k4r8, k4r6, k4r2, k4r3, k4r9, k4r4, k4r5, k4r10, k4r7. Avg sim within = 1.000000
+	k4r1 represents 10 runs: runs k4r1, k4r6, k4r2, k4r3, k4r8, k4r9, k4r7, k4r4, k4r10, k4r5. Avg sim within = 1.000000
 
 ____________________________________________K=5
 Number of runs: 10
 Major mode: k5r3
 
 Representative runs: k5r3
-	k5r3 represents 10 runs: runs k5r3, k5r4, k5r2, k5r1, k5r10, k5r7, k5r9, k5r5, k5r6, k5r8. Avg sim within = 1.000000
+	k5r3 represents 10 runs: runs k5r3, k5r7, k5r2, k5r10, k5r4, k5r8, k5r1, k5r9, k5r5, k5r6. Avg sim within = 1.000000
 
 ____________________________________________K=6
 Number of runs: 10
-Major mode: k6r7
+Major mode: k6r5
 
-Representative runs: k6r7
-	k6r7 represents 10 runs: runs k6r7, k6r5, k6r9, k6r6, k6r4, k6r2, k6r8, k6r10, k6r3, k6r1. Avg sim within = 1.000000
+Representative runs: k6r5
+	k6r5 represents 10 runs: runs k6r5, k6r3, k6r6, k6r2, k6r4, k6r10, k6r1, k6r7, k6r9, k6r8. Avg sim within = 1.000000
 
 ____________________________________________K=7
 Number of runs: 10
 Major mode: k7r2
 
 Representative runs: k7r2
-	k7r2 represents 10 runs: runs k7r2, k7r3, k7r1, k7r9, k7r7, k7r5, k7r4, k7r6, k7r8, k7r10. Avg sim within = 1.000000
+	k7r2 represents 10 runs: runs k7r2, k7r1, k7r9, k7r3, k7r7, k7r5, k7r4, k7r6, k7r8, k7r10. Avg sim within = 1.000000
 
 ____________________________________________K=8
 Number of runs: 10
@@ -61,15 +61,15 @@ Representative runs: k8r1
 
 ____________________________________________K=9
 Number of runs: 10
-Major mode: k9r10
+Major mode: k9r9
 
-Representative runs: k9r10
-	k9r10 represents 10 runs: runs k9r10, k9r9, k9r2, k9r1, k9r6, k9r4, k9r3, k9r8, k9r5, k9r7. Avg sim within = 1.000000
+Representative runs: k9r9
+	k9r9 represents 10 runs: runs k9r9, k9r8, k9r2, k9r1, k9r6, k9r3, k9r4, k9r5, k9r7, k9r10. Avg sim within = 1.000000
 
 ____________________________________________K=10
 Number of runs: 10
-Major mode: k10r4
+Major mode: k10r9
 
-Representative runs: k10r4
-	k10r4 represents 10 runs: runs k10r4, k10r5, k10r3, k10r6, k10r7, k10r10, k10r1, k10r9, k10r8, k10r2. Avg sim within = 1.000000
+Representative runs: k10r9
+	k10r9 represents 10 runs: runs k10r9, k10r10, k10r7, k10r8, k10r6, k10r4, k10r5, k10r1, k10r3, k10r2. Avg sim within = 1.000000
 

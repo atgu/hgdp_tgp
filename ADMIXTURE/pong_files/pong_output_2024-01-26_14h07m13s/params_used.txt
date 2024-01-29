@@ -7,9 +7,9 @@
 -------------------------------------------------------------------
 
 
-pong_filemap file: /Users/zkoenig/Documents/hgdp_tgp_local/ADMIXTURE/pong_files/pong_filemap
+pong_filemap file: /Users/zkoenig/Documents/hgdp_tgp_local/ADMIXTURE/pong_files/pong_filemap.txt
 Distance metric: jaccard
 Similarity threshold: 0.970000
 Verbose: False
 
-Full command: /Users/zkoenig/opt/miniconda3/envs/pong/bin/pong -m pong_filemap -i ind2pop.txt -n pop_order_expandednames.txt -l plot_colors.txt
+Full command: /Users/zkoenig/opt/miniconda3/envs/pong/bin/pong -m pong_filemap.txt -i OUT_pong_ind2popdata.txt -n pop_order_expandednames.txt -l plot_colors.txt
