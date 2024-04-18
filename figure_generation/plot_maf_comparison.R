@@ -7,6 +7,7 @@ library(grid)
 library(gridExtra)
 library(patchwork)
 library(scales)
+library(sfsmis)
 
 # setting the working directory
 setwd('/Users/zkoenig/Documents/hgdp_tgp_local/dataset_comparison/comparison_tables')
@@ -56,10 +57,10 @@ updateFieldNames <- function(pivot_df, dataset_name) {
 
 # reading in annotated comparison datasets (exported from hail)
 # they already contain binning information for the histogram plotting
-df_berg <- read_tsv('berg_new_hist.tsv')
-df_gnomad <- read_tsv('gnomad_new_hist.tsv')
-df_nygc <- read_tsv('nygc_new_hist.tsv')
-df_phase3 <- read_tsv('phase3_new_hist.tsv')
+df_berg <- read_tsv('berg_hist.tsv')
+df_gnomad <- read_tsv('gnomad_hist.tsv')
+df_nygc <- read_tsv('nygc_hist.tsv')
+df_phase3 <- read_tsv('phase3_hist.tsv')
 
 
 # adding a column which has the number of vars in HGDP+1kGP only
@@ -104,13 +105,41 @@ merge_df$comparison <- factor(merge_df$comparison,
                                   "In both HGDP+1kGP and comparison dataset"
                                 ))
 
+
 # using facet grid to get the multiple plots in a grid format
 p <- ggplot(merge_df, 
             aes(y=num_var, 
                 x=cat, 
                 fill=comparison)) + 
   theme_bw() +
-  theme(text = element_text(size=18),
+  theme(text = element_text(size=28),
+        legend.title = element_blank(),
+        legend.position = "bottom") +
+  geom_bar(position=position_dodge2(reverse=TRUE, padding = 0), stat="identity") +
+  xlab("Minor Allele Frequency in HGDP+1kGP Dataset") +
+  ylab("Number of Variants (Note Log Scale)") +
+  scale_fill_manual(
+    values = c("#377EB8", "#984EA3", "#E41A1C"),
+    breaks = c("In comparison dataset only",
+               "In both HGDP+1kGP and comparison dataset",
+               "In HGDP+1kGP only")) +
+  scale_y_log10(label=trans_format("log10",math_format(10^.x))) +
+  coord_cartesian(ylim=c(100,NA)) +
+  facet_wrap(~dataset)
+
+show(p)
+# # Writing out plots as png and pdf
+save_plot('figure4_dataset_comparisons.png', p, base_height=8, base_width=16)
+save_plot('figure4_dataset_comparisons.pdf', p, base_height=8, base_width=16)
+
+
+# using facet grid to get the multiple plots in a grid format
+p1 <- ggplot(merge_df, 
+            aes(y=num_var, 
+                x=cat, 
+                fill=comparison)) + 
+  theme_bw() +
+  theme(text = element_text(size=20),
         legend.title = element_blank(),
         legend.position = "bottom") +
   geom_bar(position=position_dodge2(reverse=TRUE, padding = 0), stat="identity") +
@@ -125,11 +154,11 @@ p <- ggplot(merge_df,
   coord_cartesian(ylim=c(100,NA)) +
   facet_wrap(~dataset)
 
-show(p)
+show(p1)
 
 # # Writing out plots as png and pdf
-save_plot('figure4_dataset_comparisons.png', p, base_height=8, base_width=14)
-save_plot('figure4_dataset_comparisons.pdf', p, base_height=8, base_width=14)
+save_plot('old_figure4_dataset_comparisons.png', p1, base_height=8, base_width=14)
+save_plot('old_figure4_dataset_comparisons.pdf', p1, base_height=8, base_width=14)
 
 
 # # Trying a different color scheme
