@@ -1,0 +1,141 @@
+---
+title: "Obtain Failed Samples & Plot Ratio"
+author: "Mary T. Yohannes"
+date: "2/2/2024"
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library("dplyr")
+library("ggplot2")
+```
+
+# read in tsv file 
+```{r}
+ds_tmp <- read.delim("gnomad_meta_updated.tsv", header = TRUE, sep = "\t")
+
+# set the sample column as row names
+ds <- ds_tmp[,-1]
+rownames(ds) <- ds_tmp[,1]
+```
+
+# Task 1: obtain samples (within the 6 popns) that failed the QC filters
+# 1a) extraction of populations and columns of interest 
+```{r}
+# subset data to only the populations and columns we are interested in 
+# all populations had at least one "TRUE" value for the filter columns so only need the sample IDs, population names, and the filter columns
+filtered_out <- c("Biaka", "Mbuti", "Bougainville", "PapuanSepik", "PapuanHighlands", "San") # populations that were filtered out by gnomAD
+
+all_popn <- data.frame() # empty data frame to store the subset data 
+for (i in filtered_out){
+  one_popn <- ds[ds$population == i, ][,c(187, 129:156)] # obtain the columns of interest for each of the 6 popns (population and sample QC filter columns)
+  all_popn <- rbind.data.frame(all_popn, one_popn) # make one dataset 
+}
+```
+
+# 1b) obtain which and how many filters each sample failed (had true value for the QC filters)
+```{r}
+# list of columns that had "TRUE" value/s - failed the gnomAD filters 
+all_popn$failed_filters <- apply(all_popn=="true", 1, FUN = function(x) toString (names(x)[x]))
+# remove NA from the list of column names 
+all_popn$failed_filters <- gsub("\\NA, ", "", all_popn$failed_filters)
+
+# total number of "TRUE" values per sample - total number of failed samples    
+all_popn$failed_filters_count <- rowSums(all_popn == "true", na.rm = T)
+
+# sanity check
+length(unlist(strsplit(all_popn$failed_filters[1], split=","))) == all_popn$failed_filters_count[1]
+
+# rearrange the columns - move the last two columns towards the beginning of the data frame 
+all_popn <- all_popn[c(1, 31, 30, 2:29)]
+```
+
+# 1c) save the result 
+```{r}
+# only write out the columns we are interested in
+subset_all_popn <- all_popn[c(1:3)]
+
+# save as csv file 
+write.csv(subset_all_popn, file = "samples_that_failed_UPDATED.csv")
+```
+
+
+# Task 2: obtain number of samples within popns that failed the QC filters 
+# 2a) number of samples in each popn 
+```{r}
+t_freq <- ds %>% count(population) 
+
+# edit the column names 
+colnames(t_freq) <- c("population", "num_of_samples")
+```
+
+# 2b) number of samples per popn that failed each filter  
+```{r}
+# first, group the dataset by population and then within each population, add up the number of samples that had a value of "TRUE" for each filter column (failed that filter)
+t_filter <- ds %>% group_by(population)  %>% summarise_at(129:156, ~sum(.=="true", na.rm = TRUE))
+
+#~sum(.==TRUE, na.rm = TRUE) is the same as funs(sum(.==TRUE, na.rm = TRUE))
+
+# this does what the above code does but only for one filter column - for each population, add up the number of samples that failed the "sample_filters.fail_n_transversion_residual" filter
+# ds %>% group_by(hgdp_tgp_meta.Population)  %>% summarise(p = sum(sample_filters.fail_n_transversion_residual == TRUE, na.rm = TRUE)) 
+
+# sanity check 
+table(ds %>% group_by(population)  %>% summarise(p = sum(sample_filters.sex_aneuploidy == "true", na.rm = TRUE)) %>% select(p) == ds %>% group_by(population)  %>% summarise_at(129:156, ~sum(.=="true", na.rm = TRUE)) %>% select(sample_filters.sex_aneuploidy)) # 80 TRUE
+```
+
+# 2c) additional data manipulation 
+```{r}
+# merge the two dataframes 
+t_final <- merge(t_freq, t_filter)
+
+# add a column to indicate the 6 populations that were filtered out by the gnomAD QC
+t_final$failed_gnomAD <- t_final$population %in% filtered_out
+```
+
+# 2d) save final table as csv file 
+```{r}
+write.csv(t_final, file = "failed_filters_population_level_UPDATED.csv", row.names = FALSE)
+```
+
+
+# Task 3: plot the ratios and save as one pdf file
+# 3a) set up data for plotting  
+```{r warning = FALSE}
+# for each filter column, calculate the ratio between the number of samples that failed and the total number of samples in the population. Then, select only the population, failed_gnomAD and the ratio columns for plotting  
+t_ratio <- t_final %>% mutate_at(vars(sample_filters.sex_aneuploidy:sample_filters.fail_n_transversion_residual), funs(P = ./t_final$num_of_samples)) %>% select(c(population, ends_with("_P"), failed_gnomAD))
+
+# list to hold the plots in 
+plot_list <- list()
+# generate scatter plots of ratios for each filter column across all populations colored by gnomAD failure 
+for (i in colnames(t_ratio)[2:29]){
+    filter_col <- gsub(".*[.]([^.]+)[_].*", "\\1", i) # set up column names correctly 
+    p <- ggplot(t_ratio, aes_string(x=i, y="population", colour="failed_gnomAD")) + 
+      geom_point() +  
+      labs(x=filter_col, title=paste("Population vs", filter_col, sep=" ")) + 
+      theme(axis.text.y = element_text(size = 7)) 
+    plot_list[[i]] <- p
+}
+```
+
+# 3b) plot and save save only one filter (as a png) - fail_n_snp_residual
+```{r}
+plot_list$sample_filters.fail_n_snp_residual_P
+
+ggsave(plot=plot_list$sample_filters.fail_n_snp_residual_P, filename="gnomAD_filters_fail_n_snp_residual.png", width=8, height=8)
+```
+
+# 3c) save all filter plots as one pdf 
+```{r results = 'hide'}
+# create a pdf file where each page is a separate plot
+pdf("gnomAD_filters_scatter_plots_UPDATED.pdf")
+for (i in 1:28) {
+    print(plot_list[[i]])
+}
+dev.off()
+```
+
+

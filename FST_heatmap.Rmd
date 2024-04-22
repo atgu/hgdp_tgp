@@ -1,5 +1,5 @@
 ---
-title: "Plotting F_ST Heatmap, F_ST vs Geographical Distance, and Additional Analyses"
+title: "Generate F_ST heatmap, F_ST vs geographical distance, and additional analyses including Mantel and Pearson correlation tests"
 author: "Mary T. Yohannes"
 date: "11/21/2021"
 output: html_document
@@ -17,16 +17,16 @@ library(tibble)
 library(ggpubr)
 library(cowplot)
 library(ade4)
+library(ggtext) 
 ```
 
 # In order to run the code below, you first need to download the mean F_ST table, produced in HGDP+1kGP tutorial nb4, locally. Make sure to update the input and output file paths in the code below accordingly.  
-
 # This markdown shows how to make a population-level F_ST heatmap, a scatter plot of F_ST vs geographical distance (with and without waypoints), and run additional analyses based off of the heatmap  
 
 # 1a) Set up matrix for heatmap
 ```{r}
 # read-in file with fst values 
-ds <- read.table('~/Desktop/Broad/alicia/HGDP_TGP/fst_and_f2/mean_fst_newPOP.txt')
+ds <- read.table('mean_fst.txt')
 
 # get population labels - 80 populations 
 vars <- unique(c(ds$V1, ds$V2)) 
@@ -51,11 +51,10 @@ rownames(cor.mat) <- cor.mat[,1]
 cor.mat <- as.matrix(cor.mat[-1])
 ```
 
-
 # 1b) Set up annotation data frame and colors for heatmap - region for row
 ```{r}
-# read-in the HGDP+1kGP metadata from gnomAD - one with the updated population labels 
-hgdp_tgp_unfil <- read.delim('~/Desktop/Broad/alicia/HGDP_TGP/gnomad_meta_for_plots.tsv', header=T, sep='\t') 
+# read-in the HGDP+1kGP metadata from gnomAD - one with the updated population labels. The version that we read-in here is after subsetting the updated metadata to the columns we need for plotting  
+hgdp_tgp_unfil <- read.delim('gnomad_meta_for_plots.tsv', header=T, sep='\t') 
 
 # set up df for annotation 
 hgdp_tgp <- unique(hgdp_tgp_unfil[c("population", "genetic.region")]) # select only population and region columns 
@@ -69,39 +68,39 @@ reg_colr <- reg_colr_df %>% pull(continent.colors, genetic.region)
 annot_reg_colr <- list(Region = reg_colr) # convert into a list  
 ```
 
-
-# 1c) Generate heatmap
+# 1c) Generate heatmap and save as a png 
 ```{r}
-# show plot - heatmap color scale within the same color family - BLUE
+# show plot - heatmap color scale within the same color family - Greens
 pheatmap(cor.mat, annotation_col = hgdp_tgp, annotation_colors = annot_reg_colr, fontsize_row = 5, fontsize_col= 5, angle_col = 90, border_color=NA, height=7, width=9, color = brewer.pal(9,"Greens"))
 
 # save as png
-#pheatmap(cor.mat, filename='~/Desktop/Broad/alicia/HGDP_TGP/fst_and_f2/fst_heatmap.png', annotation_col = hgdp_tgp, annotation_colors = annot_reg_colr, fontsize_row = 5, fontsize_col= 5, angle_col = 90, border_color=NA, height=7, width=9, color = brewer.pal(9,"Greens"))
+pheatmap(cor.mat, filename='fst_heatmap.png', annotation_col = hgdp_tgp, annotation_colors = annot_reg_colr, fontsize_row = 5, fontsize_col= 5, angle_col = 90, border_color=NA, height=7, width=9, color = brewer.pal(9,"Greens"))
 
 # save as pdf 
-#pheatmap(cor.mat, filename='~/Desktop/Broad/alicia/HGDP_TGP/fst_and_f2/fst_heatmap.pdf', annotation_col = hgdp_tgp, annotation_colors = annot_reg_colr, fontsize_row = 5, fontsize_col= 5, angle_col = 90, border_color=NA, height=7, width=9, color = brewer.pal(9,"Greens"))
+pheatmap(cor.mat, filename='fst_heatmap.pdf', annotation_col = hgdp_tgp, annotation_colors = annot_reg_colr, fontsize_row = 5, fontsize_col= 5, angle_col = 90, border_color=NA, height=7, width=9, color = brewer.pal(9,"Greens"))
 ```
 
-
-# 1d) Plot only the lower triangle of the heatmap 
+# 1d) Plot only the lower triangle of the heatmap and save as a png 
 ```{r}
-# order the rows and columns of the correlation matrix according to the clustering from the heatmap and set the lower triangle to NA values (keeping the original dendogram)
+# order the rows and columns of the correlation matrix according to the clustering from the heatmap and set the upper triangle to NA values (keeping the original dendogram)
 rnames <- rownames(cor.mat)
 hc <-  hclust(dist(cor.mat))
 cor.mat2 <- cor.mat[hc$order, hc$order]
 cor.mat2[upper.tri(cor.mat2)] <- NA
 cor.mat2 <- cor.mat2[rnames, rnames]
 
+myColor <- colorRampPalette(c("darkgreen", "white"))(15) # color palette for color bar 
+
 # replot just the lower triangle of the heatmap without reordering the clutser
-pheatmap(cor.mat2, cluster_rows = hc, cluster_cols = hc, annotation_row = hgdp_tgp, annotation_colors = annot_reg_colr, fontsize_row = 5, fontsize_col= 5, angle_col = 90, border_color=NA, height=7, width=9, color = brewer.pal(9,"Greens"), na_col="white", show_rownames = F, treeheight_col=0)
+pheatmap(cor.mat2, cluster_rows = hc, cluster_cols = hc, annotation_row = hgdp_tgp, annotation_colors = annot_reg_colr, fontsize_row = 5, fontsize_col= 5, angle_col = 90, border_color=NA, height=7, width=9, na_col="white", show_rownames = F, treeheight_col=0, color = myColor)
 
 # save plot as png 
-#pheatmap(cor.mat2, filename='~/Desktop/Broad/alicia/HGDP_TGP/fst_and_f2/fst_heatmap_lowertri.png', cluster_rows = hc, cluster_cols = hc, annotation_row = hgdp_tgp, annotation_colors = annot_reg_colr, fontsize_row = 5, fontsize_col= 5, angle_col = 90, border_color=NA, height=7, width=9, color = brewer.pal(9,"Greens"), na_col="white", show_rownames = F, treeheight_col=0)
+pheatmap(cor.mat2, filename='fst_heatmap_lowertri.png', cluster_rows = hc, cluster_cols = hc, annotation_row = hgdp_tgp, annotation_colors = annot_reg_colr, fontsize_row = 5, fontsize_col= 5, angle_col = 90, border_color=NA, height=7, width=9, na_col="white", show_rownames = F, treeheight_col=0, color = myColor)
 ```
 
-# 2a) Figure out which populations are interspersed in the heatmap 
+# 2a) Figure out which populations are interspersed in the heatmap and save as a tsv 
 ```{r}
-# generate heatmap and assign to a variable 
+# generate whole heatmap and assign to a variable 
 p_heatmap <- pheatmap(cor.mat, annotation_col = hgdp_tgp, annotation_colors = annot_reg_colr, fontsize_row = 5, fontsize_col= 5, angle_col = 90, border_color=NA, height=7, width=9, color = brewer.pal(9,"Greens"))
 
 # plot heatmap dendrogram 
@@ -116,9 +115,9 @@ pop_df <- data.frame(matrix(unlist(pop_names), nrow=length(pop_names), byrow=TRU
 # add column name
 colnames(pop_df) <- "Population" 
 
-# obtain region info for each population using the metadata df used for heatmap annotation - found in the second code chunk above
+# obtain region info for each population using the metadata df used for heatmap annotation - found in code chunk 1b above
 hgdp_tgp2 <- hgdp_tgp
-hgdp_tgp2$Population <- rownames(hgdp_tgp2) # convert rownames in to a column
+hgdp_tgp2$Population <- rownames(hgdp_tgp2) # convert rownames into a column
 
 # merge the two dfs while keeping the order 
 # by going through the region column in the merged df, we can figure out which populations are interspersed 
@@ -126,13 +125,12 @@ df_merge <- inner_join(pop_df,hgdp_tgp2)
 df_merge
 
 # write out table 
-#write.csv(df_merge, "~/Desktop/Broad/alicia/HGDP_TGP/fst_and_f2/FST_interspersed_populations_tbl_newPOP.csv", row.names=FALSE)
+write.csv(df_merge, "FST_interspersed_populations_tbl.csv", row.names=FALSE)
 ```
-
 
 # 2b) Color dendrogram branches and nodes to see the clusters and interspersed samples more clearly  
 ```{r}
-# generate heatmap and assign to a variable 
+# generate whole heatmap and assign to a variable 
 p_heatmap <- pheatmap(cor.mat, annotation_col = hgdp_tgp, annotation_colors = annot_reg_colr, fontsize_row = 5, fontsize_col= 5, angle_col = 90, border_color=NA, height=7, width=9, color = brewer.pal(9,"Greens"))
 
 # obtain heatmap dendrogram 
@@ -151,21 +149,19 @@ dend2 <- dend %>%
   color_branches(clusters = as.numeric(col_ordered), col = levels(col_ordered)) %>% # color the branches 
   set("labels_colors", as.character(col_ordered)) # color the nodes 
   
-# plot dend and save
-#png("~/Desktop/Broad/alicia/HGDP_TGP/fst_and_f2/FST_dend_COLORED_newPOP.png", width=15,height=15,units="cm",res=300)
-#pdf("~/Desktop/Broad/alicia/HGDP_TGP/fst_and_f2/FST_dend_COLORED_newPOP.pdf") 
+# plot dend and save as a png 
+png("FST_dend_COLORED.png", width=15,height=15,units="cm",res=300)
 par(cex=0.4) 
 plot(dend2)
 region_col <- unique(hgdp_tgp_unfil[c("continent.colors", "genetic.region")])
 legend("topright", legend = region_col$genetic.region,
        fill = region_col$continent.colors, border = region_col$continent.colors, bty = "n", title = "Region", cex=1.8)
-#dev.off()
+dev.off()
 ```
-
 
 # 2c) Figure out node lengths from heatmap dendrogram
 ```{r}
-# generate heatmap and assign to a variable 
+# generate whole heatmap and assign to a variable 
 p_heatmap <- pheatmap(cor.mat, annotation_col = hgdp_tgp, annotation_colors = annot_reg_colr, fontsize_row = 5, fontsize_col= 5, angle_col = 90, border_color=NA, height=7, width=9, color = brewer.pal(9,"Greens"))
 
 # obtain heatmap dendrogram 
@@ -177,28 +173,29 @@ heights <- get_branches_heights(dend, sort=FALSE)
 # covert heights in to a df, assign rownames, and save as a csv 
 height_df <- data.frame(heights)
 rownames(height_df)<-c(1:length(heights))
-#write.csv(height_df, "~/Desktop/Broad/alicia/HGDP_TGP/fst_and_f2/FST_dend_heights_tbl_newPOP.csv")
-height_df
+write.csv(height_df, "FST_dend_heights_tbl.csv")
+
+height_df # show table 
 ```
 
 # 3) F_ST vs geographical distance between population pairs - used 6371 km for the Earth's radius
-# set up datasets 
+# 3a) Set up datasets 
 ```{r}
-# read-in the HGDP+1kGP metadata from gnomAD - one with the updated population labels (includes geographical coordinates)
-hgdp_tgp_coor <- read.delim('~/Desktop/Broad/alicia/HGDP_TGP/gnomad_meta_for_plots.tsv', header=T, sep='\t') 
+# read-in the HGDP+1kGP metadata with updated population labels and geographical coordinates
+hgdp_tgp_coor <- read.delim('gnomad_meta_for_plots.tsv', header=T, sep='\t') 
 
-# select only needed columns - order matters here so that the next line executes without any issues 
+# select only needed columns - order matters here so that the next line of code executes without any issues 
 hgdp_tgp_coor <- select(hgdp_tgp_coor, c("population", "genetic.region", "latitude", "longitude", "project"))    
 
 # since the samples within each population have the same coordinates, only keep one for each  
 hgdp_tgp_coor <- unique(hgdp_tgp_coor) # the default depends on the first column which is "population" in this case
 
 # read-in file with fst values 
-ds <- read.table('~/Desktop/Broad/alicia/HGDP_TGP/fst_and_f2/mean_fst_newPOP.txt')
+ds <- read.table('mean_fst.txt')
 colnames(ds) <- c("Pop1","Pop2", "F_ST") # rename column names 
 
 # join the metadata table with the fst values using population names
-# so for both populations, we will have the coordinates, genetic region and which project they came from 
+# so for each population (in the pair), we will have the coordinates, genetic region and which project they're from 
 merged_tbl <-  left_join(ds, hgdp_tgp_coor, by=c("Pop1" = "population")) %>% left_join(hgdp_tgp_coor, by=c("Pop2" = "population")) %>% rename(GR1 = genetic.region.x, Lat1 = latitude.x, Long1 = longitude.x, Project1 = project.x, GR2 = genetic.region.y, Lat2 = latitude.y, Long2 = longitude.y, Project2 = project.y)
 
 ## what are each columns in the merged table?
@@ -215,7 +212,7 @@ merged_tbl <-  left_join(ds, hgdp_tgp_coor, by=c("Pop1" = "population")) %>% lef
 # col 11 = pop2 project
 ```
 
-# 3a1) Without waypoints 
+# 3a1) F_ST vs geographical distance between population pairs "without" waypoints 
 ```{r}
 # number of rows in merged table - 3160 population pairs
 n_rows <- dim(merged_tbl)[1]
@@ -236,7 +233,7 @@ for(i in 1:n_rows){
   # get distance between pop1 and pop2
   pop1_pop2 <- distHaversine(Pop1_coor, Pop2_coor, r=6371) 
   
-  # Balochi & Brahui, and Palestinian & Druze have geographical distance of 0 because they've got the same coordinates - located close/on top of each other 
+  # Balochi & Brahui, and Palestinian & Druze have geographical distance of 0 because they've got the same coordinates - located on top of each other 
   
   # add final results and other additional information (from the original merged table) to the final matrix
   mat_wo[i,1] = Pop1 # beginning pop
@@ -275,11 +272,12 @@ p <- ggplot(df_wo, aes(x = Distance, y = Mean.F_ST, color = Project.Status)) +
 
 # show plot 
 p
-#ggsave('~/Desktop/Broad/alicia/HGDP_TGP/fst_and_f2/fst_vs_distanceinkm_NOWAYPOINTS.pdf', p, width=7, height=5) # pdf 
-#ggsave('~/Desktop/Broad/alicia/HGDP_TGP/fst_and_f2/fst_vs_distanceinkm_NOWAYPOINTS.png', p, width=7, height=5) # png 
+
+# save plot as png 
+ggsave('fst_vs_distanceinkm_NOWAYPOINTS.png', p, width=7, height=5) 
 ```
 
-# 3b1) F_ST vs geographical distance between population pairs using 5 waypoints
+# 3b1) F_ST vs geographical distance between population pairs using "5 waypoints"
 ```{r}
 # create a data frame of all waypoints 
 istanbul <- c(41,28) # city in Turkey
@@ -288,8 +286,11 @@ phnom.penh <- c(11,104) # capital of Cambodia
 anadyr <- c(64,177) # town in Russia
 prince.rupert <- c(54,-130) # city in British Columbia, Canada
 
-waypoints <- as.data.frame(rbind(istanbul, cairo, phnom.penh, anadyr, prince.rupert), stringsAsFactors = FALSE) # create a df 
-waypoints <- waypoints %>% rownames_to_column("City") %>% rename(Lat=V1, Long=V2) # rename col names
+# create a df
+waypoints <- as.data.frame(rbind(istanbul, cairo, phnom.penh, anadyr, prince.rupert), stringsAsFactors = FALSE)  
+
+# rename col names
+waypoints <- waypoints %>% rownames_to_column("City") %>% rename(Lat=V1, Long=V2) 
 ```
 
 # 3b2) Function to go through waypoints and calculate distance between pairs of pop
@@ -325,7 +326,7 @@ pop_waypoint_distance <- function (tbl, waypoints){
     TotalDistance <- pop1_waypoint + waypoint_pop2 # add up the distances 
     MyPath <- paste(Pop1, waypoints[,1], Pop2, sep=" -> ") 
     
-    # two waypoint 
+    # two waypoints 
     } else if (nrow(waypoints) == 2) {
     pop1_waypoint1 <- distHaversine(Pop1_coor, waypoints[1, 3:2], r=6371) # get distance between pop1 and the first waypoint
     waypoint1_waypoint2 <- distHaversine(waypoints[1, 3:2], waypoints[2, 3:2], r=6371) # get distance between the first and second waypoints
@@ -333,7 +334,7 @@ pop_waypoint_distance <- function (tbl, waypoints){
     TotalDistance <- pop1_waypoint1 + waypoint1_waypoint2 + waypoint2_pop2 # add up the distances 
     MyPath <- paste(Pop1, waypoints[1,1], waypoints[2,1], Pop2, sep=" -> ") 
     
-    # three waypoint
+    # three waypoints
     } else if (nrow(waypoints) == 3) {
     pop1_waypoint1 <- distHaversine(Pop1_coor, waypoints[1, 3:2], r=6371) # get distance between pop1 and the first waypoint
     waypoint1_waypoint2 <- distHaversine(waypoints[1, 3:2], waypoints[2, 3:2], r=6371) # get distance between the first and second waypoints
@@ -461,7 +462,7 @@ for (i in 1:nrow(comb)){ # for each pair, assign waypoints accordingly
 }
 ```
 
-# 3b4) Calculate distance between each pair by going through the specified waypoints path 
+# 3b4) Calculate distance between each pop pair by going through the specified waypoints path 
 ```{r}
 mat_wth <- array() # empty matrix to hold final result (with waypoints)
 t <- 0
@@ -482,7 +483,7 @@ for (i in 1:nrow(comb)){
 mat_wth <- mat_wth[-1,]
 ```
 
-# 3b5) annotate final table with additional info and plot 
+# 3b5) Annotate final table with additional info and plot 
 ```{r}
 # convert matrix to df 
 df_wth <- as.data.frame(mat_wth)
@@ -501,51 +502,38 @@ p_waypoints <- ggplot(df_wth, aes(x = Distance, y = Mean.F_ST, color = Project.S
   geom_point(size = 1, alpha = 0.4) +
   geom_smooth(method=lm) +
   theme_classic() +
-  labs(color = "Projects", x = "Geographical Distance with Waypoints (km)", y = expression("Mean F"["ST"])) +
+  labs(color = "Projects", x = "Geographical Distance with Waypoints (km)", y = expression("Mean " ~italic(F)[ST])) + 
   theme(
     axis.title = element_text(size = 9),
     legend.title = element_text(size = 9),
     legend.text = element_text(size = 7.5)) +
   guides(color=guide_legend(override.aes=list(size=3)), shape=guide_legend(override.aes=list(size=3)))
 
-
-# library(ggrepel)
-# p_waypoints <- ggplot(df_wth, aes(x = Distance, y = Mean.F_ST, color = Project.Status)) + 
-#   geom_point(size = 1, alpha = 0.4) + 
-#   geom_smooth(method=lm) + 
-#   geom_label_repel(aes(label = ifelse(Mean.F_ST>0.20, paste(Pop1, Pop2, sep=', '), '')),
-#                   box.padding = 0.35, 
-#                   size = 2,
-#                   segment.color = 'grey50',
-#                   nudge_y = 0.01, 
-#                   show.legend	= F)+
-#   theme_classic() + 
-#   labs(color = "Projects", x = "Geographical Distance with Waypoints (km)", y = expression("Mean F"["ST"])) +  
-#   theme(
-#     axis.title = element_text(size = 9), 
-#     legend.title = element_text(size = 9),
-#     legend.text = element_text(size = 7.5)) +
-#   guides(color=guide_legend(override.aes=list(size=3)), shape=guide_legend(override.aes=list(size=3)))
-
 # show plot 
 p_waypoints
 
-# save plot 
-#ggsave('~/Desktop/Broad/alicia/HGDP_TGP/fst_and_f2/fst_vs_distanceinkm_WAYPOINTS.png', p_waypoints, width=7, height=5) # png 
+# save plot as png 
+ggsave('fst_vs_distanceinkm_WAYPOINTS.png', p_waypoints, width=7, height=5)  
 ```
 
 # 3c) Arrange the F_ST vs distance plots (with and without waypoints) together for comparison 
 ```{r}
-p_together <- plot_grid(p + ggtitle("A") + theme(legend.position="none"), p_waypoints + ggtitle("B") + theme(legend.position="none"), nrow=1) # put plots together 
+# put plots together 
+p_together <- plot_grid(p + ggtitle("A") + theme(legend.position="none"), p_waypoints + ggtitle("B") + theme(legend.position="none"), nrow=1)
+
 legend <- get_legend(p)
+
 p_together_legend <- plot_grid(p_together, legend, rel_widths = c(4.5, 1)) # add legend
+
 p_together_legend # show plot
+
 # save plots in grid as png 
-#ggsave('~/Desktop/Broad/alicia/HGDP_TGP/fst_and_f2/fst_vs_distanceinkm_TOGETHER.png', p_together_legend, width=13, height=4)
+ggsave('fst_vs_distanceinkm_TOGETHER.png', p_together_legend, width=13, height=4)
 ```
 
-# 3d) Mantel and Pearson's correlation tests 
-# Mantel test - correlation between two matrices typically containing measures of distance (takes a few min to run)
+# 3d) Mantel and Pearson correlation tests (Mantel test - correlation between two matrices typically containing measures of distance - takes a few min to run)
+
+# 3d1) Set up functions 
 ```{r}
 # function to run Mantel test 
 calc.mantel <- function (tbl){
@@ -560,7 +548,7 @@ calc.mantel <- function (tbl){
   return(mantel.result)
 }
 
-# function to run correlation test 
+# function to run Pearson correlation test 
 calc.pearson <- function (tbl){
   
   cor.result <- cor.test(tbl$Mean.F_ST, tbl$Distance)
@@ -584,7 +572,7 @@ subset.compare <- function (tbl, corr=c("mantel", "pearson")){
     cross.corr <- calc.mantel(cross.proj)
   } 
   else if (corr=="pearson") {
-    # run Pearson's correlation 
+    # run Pearson correlation 
     everything.corr <- calc.pearson(tbl)
     kgp.corr <- calc.pearson(kgp)
     hgdp.corr <- calc.pearson(hgdp)
@@ -598,18 +586,18 @@ subset.compare <- function (tbl, corr=c("mantel", "pearson")){
 }
 ```
 
-# 3d1) run correlation test on dataset WITHOUT waypoints 
+# 3d2) run correlation tests on dataset WITHOUT waypoints 
 ```{r}
-# Pearson's 
+# Pearson 
 wo_pearson <- subset.compare(df_wo, "pearson") #11:20
 
 # Mantel 
 wo_mantel <- subset.compare(df_wo, "mantel")
 ```
 
-# 3d2) run correlation test on dataset WITH waypoints 
+# 3d3) run correlation tests on dataset WITH waypoints 
 ```{r}
-# Pearson's 
+# Pearson 
 wth_pearson <- subset.compare(df_wth, "pearson") 
 
 # Mantel 
