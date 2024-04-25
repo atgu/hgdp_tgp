@@ -136,15 +136,10 @@ dmypy.json
 
 
 # pca plot -related files filesrelated files 
-scores_for_pca/
-pca_plots/
-scores_for_pca_outliers_removed/
-pca_plots_outliers_removed/
-UPDATED_scores_for_pca_preoutlier/
-UPDATED_pca_plots_preoutlier/
-UPDATED_scores_for_pca_postoutlier/
-UPDATED_pca_plots_postoutlier/
-pca_plots_pre&post_outlier.pdf
 pca/
+plots_mary/
+gnomad_meta_for_plots.tsv
+gnomad_meta_updated.tsv
 gnomad_meta_v1.tsv
+pca_subcont_first_version.ipynb
 .DS_Store

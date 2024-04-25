@@ -37,5 +37,5 @@ To view the tutorials rendered so that jupyter notebook links function properly 
 <br>[Notebook 1](https://nbviewer.org/github/atgu/hgdp_tgp/blob/master/tutorials/nb1.ipynb) - Metadata and QC
 <br>[Notebook 2](https://nbviewer.org/github/atgu/hgdp_tgp/blob/master/tutorials/nb2.ipynb) - PCA and Ancestry Analyses
 <br>[Notebook 3](https://nbviewer.org/github/atgu/hgdp_tgp/blob/master/tutorials/nb3.ipynb) - Summarizing Data Post QC
-<br>[Notebook 4](https://nbviewer.org/github/atgu/hgdp_tgp/blob/master/tutorials/nb4.ipynb) - Computing Population Genetics Statistics (F2 and F<sub>st</sub>)
+<br>[Notebook 4](https://nbviewer.org/github/atgu/hgdp_tgp/blob/master/tutorials/nb4.ipynb) - Computing Population Genetics Statistics (<em>f</em><sub>2</sub> and <em>F</em><sub>st</sub>)
 <br>[Notebook 5](https://nbviewer.org/github/atgu/hgdp_tgp/blob/master/tutorials/nb5.ipynb) - Assigning Ancestry Labels Using a Random Forest Model
