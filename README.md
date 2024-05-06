@@ -3,7 +3,7 @@
 This repository contains information for QC, analyses, and tutorials relating to the combined HGDP (Human Genome Diversity Project) + 1kGP (1000 Genomes Project) data
 
 ## Data access
-- Metadata available on Google Cloud: gs://hgdp-1kg/tutorial_datasets/metadata_and_qc/gnomad_meta_updated.tsv
+- Metadata available on Google Cloud: gs://gcp-public-data--gnomad/release/3.1/secondary_analyses/hgdp_1kg_v2/metadata_and_qc/gnomad_meta_updated.tsv
   - The metadata can be downloaded from google cloud as [described here](https://cloud.google.com/storage/docs/downloading-objects#downloading-an-object). 
 
 - All data are freely available and described in more detail [here](https://gnomad.broadinstitute.org/news/2020-10-gnomad-v3-1-new-content-methods-annotations-and-data-availability/#the-gnomad-hgdp-and-1000-genomes-callset). 
@@ -11,7 +11,7 @@ This repository contains information for QC, analyses, and tutorials relating to
 - The gnomAD HGDP+1kGP callset (pre-QC mt) can be found [here](https://gnomad.broadinstitute.org/downloads#v3-hgdp-1kg).
   - Note that files ending with `.bgz` can be viewed using `zcat` on the command line
 
-- Datasets used in the tutorials are located [here](https://gnomad.broadinstitute.org/downloads#v3-hgdp-1kg-tutorials).
+- Datasets used in the tutorials are located [here](https://docs.google.com/spreadsheets/d/179I6AUPOQ09jdsFbKcwcDQugFt4pmL-NNOD_3_rsidA/edit#gid=1063153168).
 
 - Phased haplotypes are available as BCFs on Google Cloud: gs://gcp-public-data--gnomad/resources/hgdp_1kg/phased_haplotypes_v2/ 
   - More details can be found [here](https://docs.google.com/document/d/1LCx74zREJaJwtN0MzonSv1QB3UahVtgTfjkepXaQUxc/edit).
