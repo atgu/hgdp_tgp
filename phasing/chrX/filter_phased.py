@@ -59,7 +59,6 @@ def filter_bcf(
     # For males in the non-PAR, there were some variants (7667/4745481) that had missing genotypes but SHAPEIT5 imputed
     # them as hets (1|0). Here we removed these
     # chrX:2781480-155701382
-    # report
     if chrom == 'chrX_non_par':
         j.command(f"""
                     echo 1. Getting regions where there are no Het males
@@ -163,9 +162,9 @@ def main():
 
     males = batch.read_input(f'{args.work_dir}/hgdp1kg.males.txt')
 
-    chrx_file = ['gs://hgdp-1kg/phasing/chrX/shapeit5/phase_common/hgdp1kgp_chrX_par1.shapeit5_common.bcf',
-                 'gs://hgdp-1kg/phasing/chrX/shapeit5/phase_common/hgdp1kgp_chrX_par2.shapeit5_common.bcf',
-                 'gs://hgdp-1kg/phasing/chrX/shapeit5/phase_rare/hgdp1kgp_chrX_non_par.full.shapeit5_rare.bcf']
+    chrx_file = [f'{args.work_dir}/shapeit5/phase_common/hgdp1kgp_chrX_par1.shapeit5_common.bcf',
+                 f'{args.work_dir}/shapeit5/phase_common/hgdp1kgp_chrX_par2.shapeit5_common.bcf',
+                 f'{args.work_dir}/shapeit5/phase_rare/hgdp1kgp_chrX_non_par.full.shapeit5_rare.bcf']
 
     names = ['chrX_par1', 'chrX_par2', 'chrX_non_par']
 
