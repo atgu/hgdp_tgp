@@ -23,7 +23,7 @@ def qc_vcf(
         b: hb.batch.Batch = None,
         input_vcf: hb.ResourceGroup = None,
         females_list: hb.ResourceFile = None,
-        chrom: str = None,
+        fix_ploidy: str = 'updated',
         ncpu: int = 16,
         memory: str = 'standard',
         out_dir: str = None,
@@ -31,7 +31,7 @@ def qc_vcf(
         img: str = 'docker.io/lindonkambule/gwaspy_phase_impute:latest',
 ) -> Job:
     """"""
-    j = b.new_job(name=f'QC: {chrom}')
+    j = b.new_job(name=f'QC: chrX {fix_ploidy}')
 
     j.image(img)
     j.cpu(ncpu)
@@ -41,7 +41,7 @@ def qc_vcf(
     j.storage(f'{storage}Gi')
 
     j.declare_resource_group(
-        qced_chunk={
+        output_bcf={
             'bcf': '{root}.bcf',
             'bcf.csi': '{root}.bcf.csi'
         }
@@ -64,16 +64,16 @@ def qc_vcf(
                 bcftools +fill-tags out1.bcf -Ou -o out2.bcf -- -t F_MISSING
                 rm out1.bcf
                 echo 2. Filtering VCF
-                bcftools view -Ou --output {j.qced_chunk['bcf']} -i'HWE>=1e-30 && F_MISSING<=0.1 && ExcHet >=0.5 && ExcHet <=1.5' out2.bcf
+                bcftools view -Ou --output {j.output_bcf['bcf']} -i'HWE>=1e-30 && F_MISSING<=0.1 && ExcHet>=1e-6' out2.bcf
                 rm out2.bcf
                 echo 3. Indexing
-                bcftools index {j.qced_chunk['bcf']} --output {j.qced_chunk['bcf.csi']} --threads {ncpu}
+                bcftools index {j.output_bcf['bcf']} --output {j.output_bcf['bcf.csi']} --threads {ncpu}
                 echo 4. Number of variants after  QC
-                bcftools query -f '%POS\n' {j.qced_chunk['bcf']} | wc -l
+                bcftools query -f '%POS\n' {j.output_bcf['bcf']} | wc -l
                 """)
 
-    b.write_output(j.qced_chunk,
-                   f'{out_dir}/qced_bcfs/hgdp1kgp_{chrom}')
+    b.write_output(j.output_bcf,
+                   f'{out_dir}/debugging/qced_bcfs/hgdp1kgp_chrX_fixploidy_{fix_ploidy}.qced')
 
     return j
 
@@ -92,15 +92,14 @@ def main():
 
     females = batch.read_input(f'{args.work_dir}/hgdp1kg.females_with_pops.tsv')
 
-    chroms = ['X']
-    for i in chroms:
-        # vcf_path = f'{args.work_dir}/hgdp1kg_chr{i}.vcf.bgz'
-        vcf_path = f'{args.work_dir}/hgdp1kgp_chr{i}.bcf'
+    ploidy = ['old', 'updated']
+    for val in ploidy:
+        vcf_path = f'{args.work_dir}/debugging/hgdp1kgp_chrX_fixploidy_{val}.bcf'
         vcf_size = round(get_file_size(vcf_path))
         chrom_vcf = batch.read_input_group(**{'bcf': vcf_path,
                                               'bcf.csi': f'{vcf_path}.csi'})
 
-        qc_vcf(b=batch, input_vcf=chrom_vcf, females_list=females, chrom=f'chr{i}', out_dir=args.work_dir,
+        qc_vcf(b=batch, input_vcf=chrom_vcf, females_list=females, fix_ploidy=val, out_dir=args.work_dir,
                storage=vcf_size*2+30)
 
     batch.run()

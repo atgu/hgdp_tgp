@@ -39,6 +39,7 @@ def run_phasing_batch(
         j.image(img)
         j.cpu(ncpu)
         j.memory(memory)
+        j._preemptible = False  # use non-preemptibles
         j.regions(['us-central1'])
         j.storage(f'{storage}Gi')
 
@@ -49,8 +50,17 @@ def run_phasing_batch(
             }
         )
 
+        # we fill tags using the file where males are haploid in chrX non-PAR
+        # but to avoid SHAPEIT5 outputting heterozygous haplotypes for males, we revert back to diploid, treating
+        # 0=0/0 and 1=1/1
+        # bcftools will also reorder the samples during fixploidy: it will have males first followed by all females
         j.command(f"""
-                    bcftools +fill-tags {vcf['bcf']} -Ou -o {j.annotated_vcf['bcf']} -- -t AN,AC
+                    bcftools +fill-tags {vcf['bcf']} -Ou -o tmp.bcf -- -t AN,AC
+                    bcftools index tmp.bcf
+                    bcftools +fixploidy tmp.bcf > fixed.vcf
+                    rm tmp.bcf
+                    bcftools view -Ob -o {j.annotated_vcf['bcf']} fixed.vcf
+                    rm fixed.vcf
                     bcftools index {j.annotated_vcf['bcf']} --output {j.annotated_vcf['bcf.csi']} --threads {ncpu}
                     """)
 
@@ -75,16 +85,19 @@ def run_phasing_batch(
             outfilename = 'hgdp1kgp_chrX_par1'
             genetic_map_file = '/root/gwaspy/resources/maps/b38/chrX_par1.b38.gmap.gz'
             region_type = 'PAR1'
+            memory = 'standard'
         elif region == 'par2':
             phase_region = 'chrX:155701383-156030895'
             outfilename = 'hgdp1kgp_chrX_par2'
             genetic_map_file = '/root/gwaspy/resources/maps/b38/chrX_par2.b38.gmap.gz'
             region_type = 'PAR2'
+            memory = 'standard'
         else:
             phase_region = region
             outfilename = None
             genetic_map_file = '/root/gwaspy/resources/maps/b38/chrX.b38.gmap.gz'
             region_type = 'Non-PAR'
+            memory = 'highmem'
 
         j = b.new_job(name=f'phase_common {region_type}: {phase_region}')
 
@@ -99,6 +112,7 @@ def run_phasing_batch(
         j.image(img)
         j.cpu(ncpu)
         j.memory(memory)
+        j._preemptible = False  # some chunks take 5+ hours to phase, use non-preemptibles
         j.regions(['us-central1'])
         j.storage(f'{storage}Gi')
 
@@ -255,29 +269,24 @@ def run_phasing_batch(
         return j
 
     batch = hb.Batch(backend=backend,
-                     name='shapeit5-phase-hgdp1kg-chrX')
+                     name='shapeit5-phase-hgdp1kg-chrX-fixed-common-vars')
 
     ped_file = batch.read_input(f'{output_path}/hgdp1kg_pedigree.fam')
     males_file = batch.read_input(f'{output_path}/hgdp1kg.males.txt')
 
     regions = ['par1', 'par2', 'non_par']
 
-    vcf_path = f'{output_path}/qced_bcfs/hgdp1kgp_chrX.bcf'
+    vcf_path = f'{output_path}/debugging/qced_bcfs/hgdp1kgp_chrX_fixploidy_updated.qced.bcf'
     chrom_vcf_in = batch.read_input_group(**{'bcf': vcf_path,
                                              'bcf.csi': f'{vcf_path}.csi'})
     vcf_size = round(size(vcf_path))
 
     for reg in regions:
-        # vcf_path = f'{output_path}/qced_bcfs/hgdp1kgp_chrX_{reg}.bcf'
-        # chrom_vcf_in = batch.read_input_group(**{'bcf': vcf_path,
-        #                                          'bcf.csi': f'{vcf_path}.csi'})
-        # vcf_size = round(size(vcf_path))
-
         chrom_vcf = annotate_vcf(
             b=batch,
             vcf=chrom_vcf_in,
             region=reg,
-            storage=round(vcf_size*1.5 + 2)
+            storage=round(vcf_size*8 + 100)
         ).annotated_vcf
 
         # A. Phase PAR1 and PAR2 regions without chunking
@@ -289,7 +298,7 @@ def run_phasing_batch(
                 pedigree=ped_file,
                 region=reg,
                 storage=round(vcf_size*1.5),
-                out_dir=f'{output_path}/shapeit5'
+                out_dir=f'{output_path}/debugging/shapeit5'
             )
 
         # B. Phase NON-PAR region in chunks
@@ -309,7 +318,7 @@ def run_phasing_batch(
                     pedigree=ped_file,
                     region=common_regions[i],
                     haploids_file=males_file,
-                    storage=round(vcf_size*1.5)
+                    storage=round(vcf_size*3)
                 ).phased_common_chunk
                 for i in range(len(common_regions))
             ]
@@ -319,8 +328,8 @@ def run_phasing_batch(
                 b=batch,
                 common_variants_chunks_list=common_chunks_phased,
                 pedigree=ped_file,
-                out_dir=f'{output_path}/shapeit5',
-                storage=round(vcf_size*0.1)
+                out_dir=f'{output_path}/debugging/shapeit5',
+                storage=round(vcf_size*0.5)
             ).ligated_chrom
 
             # B3. Phase rare chunks
@@ -339,7 +348,7 @@ def run_phasing_batch(
                     input_region=rare_regions[i][1],  # org (4th col in chunks)
                     pedigree=ped_file,
                     haploids_file=males_file,
-                    storage=round(vcf_size*1.5*1.5)  # we have two input files (unphased VCF+scaffold) and one output
+                    storage=round(vcf_size*2*1.5)  # we have two input files (unphased VCF+scaffold) and one output
                 ).phased_rare_chunk
                 for i in range(len(rare_regions))
             ]
@@ -348,8 +357,8 @@ def run_phasing_batch(
             concatenate_rare_chunks(
                 b=batch,
                 rare_variants_chunks_list=rare_chunks_phased,
-                out_dir=f'{output_path}/shapeit5',
-                storage=round(vcf_size*0.1)
+                out_dir=f'{output_path}/debugging/shapeit5',
+                storage=round(vcf_size*0.5)
             )
 
     batch.run()
